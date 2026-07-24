@@ -1,5 +1,5 @@
 (()=>{'use strict';
-const K='horseEvaluator3',V='3.0.3',$=id=>document.getElementById(id);let state=load();
+const K='horseEvaluator3',V='3.0.4',$=id=>document.getElementById(id);let state=load();
 const E={yearFilter:$('yearFilter'),clubFilter:$('clubFilter'),stableAreaFilter:$('stableAreaFilter'),searchInput:$('searchInput'),sortSelect:$('sortSelect'),favoriteOnly:$('favoriteOnly'),dashboard:$('dashboard'),horseList:$('horseList'),resultCount:$('resultCount'),emptyState:$('emptyState'),horseDialog:$('horseDialog'),horseForm:$('horseForm'),detailDialog:$('detailDialog'),detailContent:$('detailContent'),toast:$('toast'),importUrlBtn:$('importUrlBtn'),importStatus:$('importStatus'),importTextBtn:$('importTextBtn'),pageText:$('pageText')};
 function base(){return{version:V,app:'Horse Evaluator',horses:[],updatedAt:new Date().toISOString()}}
 function uid(){return crypto.randomUUID?crypto.randomUUID():'h-'+Date.now()+'-'+Math.random().toString(16).slice(2)}
@@ -27,13 +27,33 @@ function detail(id){const h=state.horses.find(x=>x.id===id),m=h.measurements||{}
 function cleanText(s){return t(s).replace(/\u00a0/g,' ').replace(/[ \t]+/g,' ').replace(/\r/g,'')}
 function first(text,re,group=1){const m=text.match(re);return m?t(m[group]):''}
 function numberFrom(text,re){const s=first(text,re).replace(/,/g,'');return s?Number(s):null}
-function parseUnion(text,url){const x=cleanText(text),main=(x.match(/測尺[\s\S]*?(?:募集時のPR|ポイント)/)||['',x])[0];const weights=[...main.matchAll(/馬体重[：:\s]*([0-9.]+)\s*kg/g)].map(m=>Number(m[1]));const nameCandidates=[...x.matchAll(/([^\s|｜<>]{1,30}の20\d{2})/g)].map(m=>m[1]).filter(v=>!/募集|年齢/.test(v));const birth=first(x,/生年月日\s*([0-9]{4})[\/.-]([0-9]{1,2})[\/.-]([0-9]{1,2})/,0);let birthDate='';if(birth){const p=birth.match(/([0-9]{4})[\/.-]([0-9]{1,2})[\/.-]([0-9]{1,2})/);birthDate=`${p[1]}-${p[2].padStart(2,'0')}-${p[3].padStart(2,'0')}`}
-const year=numberFrom(x,/〖(20\d{2})年(?:5月下旬|7月上旬)/)||new Date().getFullYear();
-return{year,club:'ユニオン',horseNo:numberFrom(x,/PEGASUS\s*([0-9]+)/i),name:nameCandidates[0]||'',sex:first(x,/性別\s*(牡|牝|せん|騸)/),birthDate,sire:first(x,/父\s+([^\n]+?)(?=\s+母\s|\n)/),dam:first(x,/母\s+([^\n]+?)(?=\s+母の父|\n)/).replace(/^\*/,'').trim(),broodmareSire:first(x,/母の父\s+([^\n]+?)(?=\s+5代血統表|\s+生年月日|\n)/).replace(/^\*/,'').trim(),stableArea:first(x,/所属\s*(美浦|栗東|地方)/),trainer:first(x,/(?:予定厩舎|厩舎)\s*([^\n]+?)(?=\s+測尺|\n)/).replace(/厩舎$/,''),breeder:first(x,/生産[：:]\s*([^\n]+)/).replace(/\s+(所属|予定厩舎).*$/,''),price:numberFrom(x,/総額\s*([0-9,]+)万円/),sharePrice:numberFrom(x,/一口価格\s*([0-9,]+)円/),measurements:{weight:weights.length?weights[weights.length-1]:numberFrom(x,/馬体重[：:\s]*([0-9.]+)\s*kg/),height:numberFrom(main,/体高[：:\s]*([0-9.]+)\s*cm/),girth:numberFrom(main,/胸囲[：:\s]*([0-9.]+)\s*cm/),cannon:numberFrom(main,/管囲[：:\s]*([0-9.]+)\s*cm/)},sourceUrl:url}}
+function parseUnion(text,url){
+const x=cleanText(text);
+const horseNo=numberFrom(x,/PEGASUS\s*([0-9]+)/i);
+const birthRaw=first(x,/生年月日\s*([0-9]{4})[\/.-]([0-9]{1,2})[\/.-]([0-9]{1,2})/,0);
+let birthDate='',birthYear='';
+if(birthRaw){const p=birthRaw.match(/([0-9]{4})[\/.-]([0-9]{1,2})[\/.-]([0-9]{1,2})/);birthYear=p[1];birthDate=`${p[1]}-${p[2].padStart(2,'0')}-${p[3].padStart(2,'0')}`}
+const sire=first(x,/父\s+([^\n]+?)(?=\s+母\s|\n)/);
+const dam=first(x,/母\s+([^\n]+?)(?=\s+母の父|\n)/).replace(/^\*/, '').trim();
+const nameCandidates=[...x.matchAll(/([^\s|｜<>]{1,30}の20\d{2})/g)].map(m=>m[1]).filter(v=>!/募集|年齢/.test(v));
+const name=nameCandidates[0]||(dam&&birthYear?`${dam}の${birthYear}`:'');
+const measureSection=(x.match(/測尺[\s\S]*?(?:募集時のPR|近況|ムービー|フォトギャラリー|ポイント|$)/)||['',x])[0];
+const all=(label,unit)=>[...measureSection.matchAll(new RegExp(label+'[：:\\s]*([0-9.]+)\\s*'+unit,'g'))].map(m=>Number(m[1]));
+const latest=a=>a.length?a[a.length-1]:null;
+const years=[...measureSection.matchAll(/[【〖](20\d{2})年/g)].map(m=>Number(m[1]));
+return{
+year:latest(years)||new Date().getFullYear(),club:'ユニオン',horseNo,name,
+sex:first(x,/性別\s*(牡|牝|せん|騸)/),birthDate,sire,dam,
+broodmareSire:first(x,/母の父\s+([^\n]+?)(?=\s+5代血統表|\s+生年月日|\n)/).replace(/^\*/, '').trim(),
+stableArea:first(x,/所属\s*(美浦|栗東|地方)/),
+trainer:first(x,/(?:予定厩舎|厩舎)\s*([^\n]+?)(?=\s+測尺|\n)/).replace(/厩舎$/,''),
+breeder:first(x,/生産牧場\s*([^\n]+?)(?=\s+所属|\n)/),
+price:numberFrom(x,/総額\s*([0-9,]+)万円/),sharePrice:numberFrom(x,/一口価格\s*([0-9,]+)円/),
+measurements:{weight:latest(all('馬体重','kg')),height:latest(all('体高','cm')),girth:latest(all('胸囲','cm')),cannon:latest(all('管囲','cm'))},sourceUrl:url}}
 async function fetchPageText(url){let lastError;try{const r=await fetch(url,{mode:'cors',credentials:'omit'});if(!r.ok)throw new Error(`HTTP ${r.status}`);const html=await r.text();return new DOMParser().parseFromString(html,'text/html').body?.innerText||html}catch(e){lastError=e}try{const clean=url.replace(/^https?:\/\//,'');const proxy=`https://r.jina.ai/https://${clean}`;const r=await fetch(proxy,{headers:{Accept:'text/plain'}});if(!r.ok)throw new Error(`Reader HTTP ${r.status}`);return await r.text()}catch(e){console.error(lastError,e);throw new Error('ページを取得できませんでした。通信状態または外部取得サービスの制限を確認してください。')}}
 function applyImported(d){const fields=['year','club','horseNo','name','sex','birthDate','sire','dam','broodmareSire','stableArea','trainer','breeder','price','sharePrice','sourceUrl'];fields.forEach(k=>{if(d[k]!==''&&d[k]!=null)$(k).value=d[k]});['weight','height','girth','cannon'].forEach(k=>{if(d.measurements?.[k]!=null)$(k).value=d.measurements[k]})}
 function importedCount(d){return[d.horseNo,d.name,d.sire,d.dam,d.trainer,d.price,d.sharePrice,d.measurements.weight].filter(v=>v!==''&&v!=null).length}
-function importFromText(){const text=t(E.pageText?.value);const url=t($('sourceUrl').value);if(!text){setImportStatus('ユニオンページの本文を貼り付けてください。','error');return}try{const d=parseUnion(text,url);const count=importedCount(d);if(count<5)throw new Error('必要な項目を十分に抽出できませんでした。ページ全体をコピーして貼り付けてください。');applyImported(d);setImportStatus(`${count}項目を取得しました。内容を確認して保存してください。`,'ok');toast('貼り付け本文から基本情報を取得しました')}catch(e){console.error(e);setImportStatus(e.message||'本文からの取込に失敗しました。','error')}}
+function importFromText(){const text=t(E.pageText?.value);const url=t($('sourceUrl').value);if(!text){setImportStatus('ユニオンページの本文を貼り付けてください。','error');return}try{const d=parseUnion(text,url);const count=importedCount(d);if(count<5)throw new Error('必要な項目を十分に抽出できませんでした。ページ全体をコピーして貼り付けてください。');applyImported(d);const missing=[];if(!d.name)missing.push('馬名');if(!d.breeder)missing.push('生産牧場');setImportStatus(`${count}項目を取得しました。${missing.length?' 未取得：'+missing.join('・')+'。':''} 内容を確認して保存してください。`,'ok');toast('貼り付け本文から基本情報を取得しました')}catch(e){console.error(e);setImportStatus(e.message||'本文からの取込に失敗しました。','error')}}
 async function importFromUrl(){const url=t($('sourceUrl').value);if(!url){setImportStatus('URLを入力してください。','error');return}let u;try{u=new URL(url)}catch{setImportStatus('URLの形式を確認してください。','error');return}if(!/(^|\.)union-oc\.co\.jp$/i.test(u.hostname)){setImportStatus('ユニオン募集馬ページ専用です。','error');return}E.importUrlBtn.disabled=true;setImportStatus('URL取得を試行しています…');try{const text=await fetchPageText(u.origin+u.pathname+u.search);const d=parseUnion(text,url);const count=importedCount(d);if(count<5)throw new Error('必要な項目を十分に抽出できませんでした。');applyImported(d);setImportStatus(`${count}項目を取得しました。内容を確認して保存してください。`,'ok');toast('ユニオン基本情報を取得しました')}catch(e){console.error(e);setImportStatus('URL取得は端末・通信環境により失敗します。下の「ページ本文から取得」を使用してください。','error')}finally{E.importUrlBtn.disabled=false}}
 function exportJ(){const b=new Blob([JSON.stringify({...state,version:V,exportedAt:new Date().toISOString()},null,2)],{type:'application/json'}),u=URL.createObjectURL(b),a=document.createElement('a');a.href=u;a.download=`horse-evaluator-backup-${new Date().toISOString().slice(0,10)}.json`;a.click();URL.revokeObjectURL(u);toast('バックアップを書き出しました')}
 async function importJ(f){try{const m=migrate(JSON.parse(await f.text()));if(!m.horses.length)throw 0;if(confirm(`${m.horses.length}頭を現在のデータに追加しますか？\nキャンセルすると置換します。`)){const map=new Map(state.horses.map(h=>[h.id,h]));m.horses.forEach(h=>map.set(h.id,h));state.horses=[...map.values()]}else state=m;save();render();toast(`${m.horses.length}頭を復元しました`)}catch{alert('JSONを読み込めませんでした。')}}
