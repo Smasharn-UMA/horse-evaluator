@@ -1,13 +1,18 @@
-# Horse Evaluator Ver.2.0（iPhone・iPad対応版）
+# Horse Evaluator Ver.2.0.1
 
-GitHubアプリでファイルを1つずつアップロードできる、フォルダなし構成です。
+Ver.1 JSON互換修正版です。
 
-アップロードするファイル：
-- index.html
-- style.css
-- app.js
-- sw.js
-- README.md
+## 対応形式
+- Ver.1の1頭単位JSON
+- Ver.1 JSONを複数同時選択
+- Ver.2のhorses配列バックアップ
+- JSON配列、records、items、data形式
 
-既存の icon-192.png、icon-512.png、manifest.webmanifest は残してください。
-更新前に現行アプリのJSONバックアップを保存してください。
+## GitHubアプリで差し替えるファイル
+1. index.html
+2. style.css
+3. app.js
+4. sw.js
+5. README.md
+
+icon-192.png、icon-512.png、manifest.webmanifestはそのまま残してください。
