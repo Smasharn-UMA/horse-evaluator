@@ -1,18 +1,13 @@
-# Horse Evaluator Ver.2.0
+# Horse Evaluator Ver.2.0（iPhone・iPad対応版）
 
-## 主な機能
-- 募集馬一覧、検索、クラブ絞り込み、並び替え
-- 新規登録、編集、上書き保存、削除
-- お気に入り、測尺履歴、6項目評価
-- JSONバックアップ・復元
-- iPhone / iPad対応
+GitHubアプリでファイルを1つずつアップロードできる、フォルダなし構成です。
 
-## 更新手順
-1. 現行版からJSONを書き出して保管します。
-2. ZIPを展開します。
-3. GitHubリポジトリへ `index.html`、`css`、`js` をアップロードします。
-4. GitHub Pagesを再読み込みします。
-5. Ver.2.0の「JSON読み込み」でバックアップを復元します。
+アップロードするファイル：
+- index.html
+- style.css
+- app.js
+- sw.js
+- README.md
 
-## 注意
-写真・動画本体はブラウザ保存容量を圧迫するため、Ver.2.0ではURLを記録します。
+既存の icon-192.png、icon-512.png、manifest.webmanifest は残してください。
+更新前に現行アプリのJSONバックアップを保存してください。
