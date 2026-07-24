@@ -1,18 +1,25 @@
-# Horse Evaluator Ver.2.0.1
+# Horse Evaluator 3.0 — Sprint 1
 
-Ver.1 JSON互換修正版です。
+GitHub Pages、iPhone、iPadで使える一口馬主募集馬管理アプリです。
 
-## 対応形式
-- Ver.1の1頭単位JSON
-- Ver.1 JSONを複数同時選択
-- Ver.2のhorses配列バックアップ
-- JSON配列、records、items、data形式
+## 実装済み
+- 年度・クラブ・募集番号管理
+- 募集馬カルテの登録、編集、削除
+- 父、母、母父、厩舎、生産牧場、育成牧場
+- 募集総額、一口価格
+- 募集時測尺（馬体重、体高、胸囲、管囲）
+- 写真URL、歩様動画URL（1本）
+- お気に入り、メモ、更新履歴
+- 検索、絞り込み、並び替え
+- ブラウザ内保存
+- JSONバックアップ、復元
+- 旧形式JSONの主要項目移行
 
-## GitHubアプリで差し替えるファイル
-1. index.html
-2. style.css
-3. app.js
-4. sw.js
-5. README.md
+## 導入
+ZIPを展開し、`index.html`、`style.css`、`app.js`をGitHubリポジトリのルートにアップロードしてください。GitHub Pagesを有効にすれば利用できます。
 
-icon-192.png、icon-512.png、manifest.webmanifestはそのまま残してください。
+## 注意
+データは使用中のブラウザ内に保存されます。iPhoneとiPad間は自動同期されないため、JSONバックアップと復元で移行してください。SafariのWebサイトデータを消去する前に必ずバックアップしてください。
+
+## Sprint 2予定
+馬体重履歴、評価項目、スコア、ランキング、比較画面。
