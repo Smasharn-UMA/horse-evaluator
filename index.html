@@ -1,20 +1,108 @@
-<!doctype html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#15241c">
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#15241c">
   <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <link rel="manifest" href="manifest.webmanifest">
-  <link rel="apple-touch-icon" href="icon-192.png"><title>Horse Evaluator</title><link rel="stylesheet" href="style.css"></head><body>
-<header class="app-header"><div><p class="eyebrow">HORSE EVALUATOR</p><h1>募集馬管理</h1></div><button id="newHorseBtn" class="primary">＋ 新規登録</button></header>
-<main class="container"><section id="dashboardView" class="view active"><div class="summary-grid"><article class="summary-card"><span>登録頭数</span><strong id="horseCount">0</strong></article><article class="summary-card"><span>お気に入り</span><strong id="favoriteCount">0</strong></article><article class="summary-card"><span>平均評価</span><strong id="averageScore">—</strong></article></div>
-<section class="panel toolbar"><label class="grow"><span>検索</span><input id="searchInput" type="search" placeholder="馬名・父・母・クラブ・厩舎"></label><label><span>クラブ</span><select id="clubFilter"><option value="">すべて</option><option>キャロット</option><option>シルク</option><option>ユニオン</option><option>インゼル</option><option>その他</option></select></label><label><span>並び替え</span><select id="sortSelect"><option value="updatedDesc">更新日時 新しい順</option><option value="scoreDesc">総合評価 高い順</option><option value="numberAsc">募集番号 順</option><option value="nameAsc">馬名 順</option></select></label></section>
-<section class="panel data-actions"><button id="exportBtn">JSON書き出し</button><label class="file-button">JSON読み込み<input id="importInput" type="file" accept=".json,application/json"></label><button id="sampleBtn" class="quiet">サンプル登録</button></section><section id="horseList" class="horse-list"></section><div id="emptyState" class="empty-state"><h2>募集馬が未登録です</h2><p>「＋ 新規登録」から最初の1頭を登録してください。</p></div></section>
-<section id="editorView" class="view"><div class="editor-header"><button id="backBtn" class="quiet">← 一覧へ</button><div><p class="eyebrow">HORSE PROFILE</p><h2 id="editorTitle">新規登録</h2></div><button id="favoriteBtn" class="icon-button" aria-label="お気に入り">☆</button></div><form id="horseForm"><input id="horseId" type="hidden">
-<section class="panel"><h3>基本情報</h3><div class="form-grid"><label><span>馬名・募集名 *</span><input id="name" required></label><label><span>クラブ</span><select id="club"><option value="">未設定</option><option>キャロット</option><option>シルク</option><option>ユニオン</option><option>インゼル</option><option>その他</option></select></label><label><span>募集年</span><input id="year" type="number" min="2000" max="2100"></label><label><span>募集番号</span><input id="number" inputmode="numeric"></label><label><span>性別</span><select id="sex"><option value="">未設定</option><option>牡</option><option>牝</option><option>騸</option></select></label><label><span>生年月日</span><input id="birthDate" type="date"></label><label><span>厩舎</span><input id="trainer"></label><label><span>生産牧場</span><input id="breeder"></label><label><span>募集価格（万円）</span><input id="price" type="number" min="0" step="1"></label><label><span>出資状況</span><select id="status"><option value="">未設定</option><option>検討中</option><option>最優先候補</option><option>申込</option><option>出資</option><option>落選</option><option>見送り</option></select></label></div></section>
-<section class="panel"><h3>血統</h3><div class="form-grid"><label><span>父</span><input id="sire"></label><label><span>母</span><input id="dam"></label><label><span>母父</span><input id="damsire"></label></div></section>
-<section class="panel"><div class="section-heading"><div><h3>測尺履歴</h3><p>時系列で複数登録できます。</p></div><button id="addMeasurementBtn" type="button">＋ 測尺追加</button></div><div id="measurementList" class="measurement-list"></div></section>
-<section class="panel"><h3>評価</h3><div class="score-grid"><label><span>トモ容量</span><input id="hindquarters" type="range" min="0" max="10" step="1"><output></output></label><label><span>歩様</span><input id="gait" type="range" min="0" max="10" step="1"><output></output></label><label><span>成長期待</span><input id="growth" type="range" min="0" max="10" step="1"><output></output></label><label><span>脚元</span><input id="legs" type="range" min="0" max="10" step="1"><output></output></label><label><span>血統・配合</span><input id="pedigree" type="range" min="0" max="10" step="1"><output></output></label><label><span>価格妥当性</span><input id="value" type="range" min="0" max="10" step="1"><output></output></label></div><div class="total-score"><span>総合評価</span><strong id="totalScore">0</strong><small>/ 100</small></div></section>
-<section class="panel"><h3>資料リンク</h3><p class="hint">GitHub Pagesでは端末内の大容量動画を永続保存できないため、iCloud Drive・Google Drive・YouTube限定公開などのURLを記録します。</p><div class="form-grid"><label><span>写真URL</span><textarea id="photoUrls" rows="3" placeholder="1行に1件"></textarea></label><label><span>歩様動画URL</span><textarea id="videoUrls" rows="3" placeholder="1行に1件"></textarea></label></div></section><section class="panel"><h3>メモ</h3><textarea id="notes" rows="8" placeholder="馬体、歩様、血統、懸念点、出資判断など"></textarea></section><div class="sticky-actions"><button id="deleteBtn" type="button" class="danger hidden">削除</button><button type="submit" class="primary">保存</button></div></form></section></main>
-<template id="measurementTemplate"><div class="measurement-row"><label><span>測定日</span><input class="m-date" type="date"></label><label><span>馬体重 kg</span><input class="m-weight" type="number" min="0" step="0.1"></label><label><span>体高 cm</span><input class="m-height" type="number" min="0" step="0.1"></label><label><span>胸囲 cm</span><input class="m-chest" type="number" min="0" step="0.1"></label><label><span>管囲 cm</span><input class="m-cannon" type="number" min="0" step="0.1"></label><button type="button" class="remove-measurement danger-text">削除</button></div></template><div id="toast" role="status" aria-live="polite"></div><script src="app.js"></script>  <script>
-    if ("serviceWorker" in navigator) {
-      window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js").catch(console.warn));
-    }
-  </script>
-</body></html>
+  <link rel="apple-touch-icon" href="icon-192.png">
+  <title>Horse Evaluator</title>
+  <link rel="stylesheet" href="style.css?v=201">
+</head>
+<body>
+<header class="app-header">
+  <div><p class="eyebrow">HORSE EVALUATOR</p><h1>募集馬管理</h1></div>
+  <button id="newHorseBtn" class="primary">＋ 新規登録</button>
+</header>
+
+<main class="container">
+<section id="dashboardView" class="view active">
+  <div class="summary-grid">
+    <article class="summary-card"><span>登録頭数</span><strong id="horseCount">0</strong></article>
+    <article class="summary-card"><span>お気に入り</span><strong id="favoriteCount">0</strong></article>
+    <article class="summary-card"><span>平均評価</span><strong id="averageScore">—</strong></article>
+  </div>
+
+  <section class="panel toolbar">
+    <label class="grow"><span>検索</span><input id="searchInput" type="search" placeholder="馬名・父・母・クラブ・厩舎"></label>
+    <label><span>クラブ</span><select id="clubFilter"><option value="">すべて</option><option>キャロット</option><option>シルク</option><option>ユニオン</option><option>インゼル</option><option>その他</option></select></label>
+    <label><span>並び替え</span><select id="sortSelect"><option value="updatedDesc">更新日時 新しい順</option><option value="scoreDesc">総合評価 高い順</option><option value="numberAsc">募集番号 順</option><option value="nameAsc">馬名 順</option></select></label>
+  </section>
+
+  <section class="panel data-actions">
+    <button id="exportBtn">JSON書き出し</button>
+    <label class="file-button">JSON読み込み<input id="importInput" type="file" accept=".json,application/json" multiple></label>
+    <button id="sampleBtn" class="quiet">サンプル登録</button>
+  </section>
+
+  <section id="horseList" class="horse-list"></section>
+  <div id="emptyState" class="empty-state"><h2>募集馬が未登録です</h2><p>「＋ 新規登録」から最初の1頭を登録してください。</p></div>
+</section>
+
+<section id="editorView" class="view">
+  <div class="editor-header">
+    <button id="backBtn" class="quiet">← 一覧へ</button>
+    <div><p class="eyebrow">HORSE PROFILE</p><h2 id="editorTitle">新規登録</h2></div>
+    <button id="favoriteBtn" class="icon-button" type="button">☆</button>
+  </div>
+
+  <form id="horseForm">
+    <input id="horseId" type="hidden">
+    <section class="panel"><h3>基本情報</h3><div class="form-grid">
+      <label><span>馬名・募集名 *</span><input id="name" required></label>
+      <label><span>クラブ</span><select id="club"><option value="">未設定</option><option>キャロット</option><option>シルク</option><option>ユニオン</option><option>インゼル</option><option>その他</option></select></label>
+      <label><span>募集年</span><input id="year" type="number"></label>
+      <label><span>募集番号</span><input id="number"></label>
+      <label><span>性別</span><select id="sex"><option value="">未設定</option><option>牡</option><option>牝</option><option>騸</option></select></label>
+      <label><span>生年月日</span><input id="birthDate" type="date"></label>
+      <label><span>厩舎</span><input id="trainer"></label>
+      <label><span>生産牧場</span><input id="breeder"></label>
+      <label><span>募集価格（万円）</span><input id="price" type="number"></label>
+      <label><span>出資状況</span><select id="status"><option value="">未設定</option><option>検討中</option><option>最優先候補</option><option>申込</option><option>出資</option><option>落選</option><option>見送り</option></select></label>
+    </div></section>
+
+    <section class="panel"><h3>血統</h3><div class="form-grid">
+      <label><span>父</span><input id="sire"></label><label><span>母</span><input id="dam"></label><label><span>母父</span><input id="damsire"></label>
+    </div></section>
+
+    <section class="panel">
+      <div class="section-heading"><div><h3>測尺履歴</h3><p>時系列で複数登録できます。</p></div><button id="addMeasurementBtn" type="button">＋ 測尺追加</button></div>
+      <div id="measurementList" class="measurement-list"></div>
+    </section>
+
+    <section class="panel"><h3>評価</h3><div class="score-grid">
+      <label><span>トモ容量</span><input id="hindquarters" type="range" min="0" max="10"><output></output></label>
+      <label><span>歩様</span><input id="gait" type="range" min="0" max="10"><output></output></label>
+      <label><span>成長期待</span><input id="growth" type="range" min="0" max="10"><output></output></label>
+      <label><span>脚元</span><input id="legs" type="range" min="0" max="10"><output></output></label>
+      <label><span>血統・配合</span><input id="pedigree" type="range" min="0" max="10"><output></output></label>
+      <label><span>価格妥当性</span><input id="value" type="range" min="0" max="10"><output></output></label>
+    </div><div class="total-score"><span>総合評価</span><strong id="totalScore">0</strong><small>/100</small></div></section>
+
+    <section class="panel"><h3>資料リンク</h3><div class="form-grid">
+      <label><span>写真URL</span><textarea id="photoUrls" rows="3"></textarea></label>
+      <label><span>歩様動画URL</span><textarea id="videoUrls" rows="3"></textarea></label>
+    </div></section>
+
+    <section class="panel"><h3>メモ</h3><textarea id="notes" rows="8"></textarea></section>
+    <div class="sticky-actions"><button id="deleteBtn" type="button" class="danger hidden">削除</button><button type="submit" class="primary">保存</button></div>
+  </form>
+</section>
+</main>
+
+<template id="measurementTemplate"><div class="measurement-row">
+  <label><span>測定日</span><input class="m-date" type="date"></label>
+  <label><span>馬体重 kg</span><input class="m-weight" type="number" step="0.1"></label>
+  <label><span>体高 cm</span><input class="m-height" type="number" step="0.1"></label>
+  <label><span>胸囲 cm</span><input class="m-chest" type="number" step="0.1"></label>
+  <label><span>管囲 cm</span><input class="m-cannon" type="number" step="0.1"></label>
+  <button type="button" class="remove-measurement danger-text">削除</button>
+</div></template>
+
+<div id="toast"></div>
+<script src="app.js?v=201"></script>
+<script>if("serviceWorker"in navigator){window.addEventListener("load",()=>navigator.serviceWorker.register("./sw.js?v=201").catch(console.warn));}</script>
+</body>
+</html>
