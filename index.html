@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#14213d">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="出資判断">
+  <title>一口馬主 出資判断</title>
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<header class="topbar">
+  <div>
+    <h1>一口馬主 出資判断</h1>
+    <p>写真・歩様・測尺・教師データを統合する初期版</p>
+  </div>
+  <button id="installBtn" class="secondary hidden">ホーム画面へ追加</button>
+</header>
+
+<nav class="tabs" aria-label="画面切替">
+  <button data-view="dashboard" class="active">ホーム</button>
+  <button data-view="horses">過去馬</button>
+  <button data-view="ranking">ランキング</button>
+  <button data-view="newHorse">募集馬登録</button>
+  <button data-view="backup">バックアップ</button>
+</nav>
+
+<main>
+<section id="dashboard" class="view active">
+  <div class="stats" id="stats"></div>
+  <div class="panel">
+    <h2>評価方針</h2>
+    <div class="notice">初期版は半自動です。写真・動画を保存し、各項目を人が評価します。総合点、タイプ判定、類似馬検索は自動計算します。</div>
+    <div class="grid2">
+      <div>
+        <h3>重視項目</h3>
+        <p>トモ容量、後肢の踏み込み、背中の柔軟性、体幹、測尺バランス、成長余地。</p>
+      </div>
+      <div>
+        <h3>データ保存</h3>
+        <p>ログイン不要。メタデータは端末内、写真・動画はIndexedDBへ保存します。</p>
+      </div>
+    </div>
+  </div>
+  <div class="panel">
+    <h2>直近の上位教師データ</h2>
+    <div id="topHorses" class="cards"></div>
+  </div>
+</section>
+
+<section id="horses" class="view">
+  <div class="panel sticky-tools">
+    <input id="search" type="search" placeholder="馬名・父・タイプで検索">
+    <select id="surfaceFilter"><option value="">適性すべて</option><option>芝</option><option>ダート</option><option>芝・ダート</option></select>
+    <select id="groupFilter"><option value="">区分すべて</option><option>中央重賞</option><option>地方重賞</option><option>検討馬</option><option>注意例</option></select>
+  </div>
+  <div id="horseList" class="cards"></div>
+</section>
+
+<section id="ranking" class="view">
+  <div class="panel">
+    <h2>総合ランキング</h2>
+    <div class="table-wrap"><table><thead><tr><th>順位</th><th>馬名</th><th>型</th><th>測尺</th><th>総合</th></tr></thead><tbody id="rankingBody"></tbody></table></div>
+  </div>
+</section>
+
+<section id="newHorse" class="view">
+  <form id="horseForm" class="panel">
+    <div class="form-head"><h2 id="formTitle">募集馬を登録</h2><button type="button" id="resetForm" class="secondary">新規入力</button></div>
+    <input type="hidden" name="id">
+    <div class="grid2">
+      <label>馬名<input required name="name"></label>
+      <label>区分<select name="group"><option>検討馬</option><option>中央重賞</option><option>地方重賞</option><option>注意例</option></select></label>
+      <label>性別<select name="sex"><option>牡</option><option>牝</option><option>騸</option></select></label>
+      <label>生年<input type="number" name="birthYear" min="2000" max="2030"></label>
+      <label>父<input name="sire"></label>
+      <label>母<input name="dam"></label>
+      <label>母父<input name="damsire"></label>
+      <label>育成牧場<input name="trainingFarm"></label>
+      <label>馬体重 kg<input type="number" step="0.1" name="weight"></label>
+      <label>体高 cm<input type="number" step="0.1" name="height"></label>
+      <label>胸囲 cm<input type="number" step="0.1" name="chest"></label>
+      <label>管囲 cm<input type="number" step="0.1" name="cannon"></label>
+      <label>主適性<select name="surface"><option>芝</option><option>ダート</option><option>芝・ダート</option><option>未判定</option></select></label>
+      <label>距離<select name="distance"><option>短距離</option><option>マイル</option><option>中距離</option><option>中長距離</option><option>未判定</option></select></label>
+    </div>
+    <h3>手動評価（0〜10）</h3>
+    <div class="score-grid">
+      <label>トモ容量<input type="number" name="tomo" min="0" max="10" step="0.1" value="7.0"></label>
+      <label>歩様<input type="number" name="gait" min="0" max="10" step="0.1" value="7.0"></label>
+      <label>柔軟性<input type="number" name="flexibility" min="0" max="10" step="0.1" value="7.0"></label>
+      <label>バランス<input type="number" name="balance" min="0" max="10" step="0.1" value="7.0"></label>
+      <label>成長期待<input type="number" name="growth" min="0" max="10" step="0.1" value="7.0"></label>
+    </div>
+    <label>メモ<textarea name="notes" rows="4"></textarea></label>
+    <div class="grid2">
+      <label>立ち写真<input type="file" id="photoInput" accept="image/*"></label>
+      <label>歩様動画<input type="file" id="videoInput" accept="video/*"></label>
+    </div>
+    <div class="actions"><button type="submit">保存して評価</button><button type="button" id="deleteHorse" class="danger hidden">削除</button></div>
+  </form>
+  <div id="evaluation" class="panel hidden"></div>
+</section>
+
+<section id="backup" class="view">
+  <div class="panel">
+    <h2>データ書き出し・復元</h2>
+    <p>端末変更やSafariデータ消去に備え、定期的にJSONを書き出してください。写真・動画は容量が大きいため、初期版のJSONには含みません。</p>
+    <div class="actions">
+      <button id="exportBtn">JSONを書き出す</button>
+      <label class="file-button">JSONから復元<input id="importInput" type="file" accept=".json,application/json"></label>
+      <button id="resetData" class="danger">初期データへ戻す</button>
+    </div>
+  </div>
+  <div class="panel">
+    <h2>iPhone・iPadでの利用</h2>
+    <ol>
+      <li>このフォルダを静的Webサイトとして公開します。</li>
+      <li>SafariでURLを開きます。</li>
+      <li>共有ボタン →「ホーム画面に追加」。</li>
+      <li>初回起動後は一部機能をオフラインでも使用できます。</li>
+    </ol>
+  </div>
+</section>
+</main>
+
+<dialog id="horseDialog">
+  <button class="dialog-close" aria-label="閉じる">×</button>
+  <div id="dialogContent"></div>
+</dialog>
+
+<footer>初期版 v0.1 — ログインなし・端末内保存</footer>
+<script src="app.js"></script>
+</body>
+</html>
