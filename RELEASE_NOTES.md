@@ -1,21 +1,9 @@
 # Release Notes
 
-## 3.1.1 — Sprint 1.4.1 Step1
-
-### Fixed
-- Sprint 1.3バックアップJSONの復元互換性を強化
-- JSON構文・データ構造・年度値のエラー表示を追加
-- 欠損フィールドを安全に補完
-- 保存後の再読込検証を追加
-
-### Safety
-- JSON取込直前の状態を `horseEvaluator3_preImportBackup` に自動退避
-- 置換と追加・更新の選択内容を確認画面に明示
-
-### Compatibility
-- Sprint 1.3（3.1.0）JSONで検証
-- 59頭の読込、保存、再読込、再書出しの件数一致を確認
-
-
-## Sprint 1.5 (Scaffold)
-- Planned: Silk parser, Union parser improvements, club field, sex field.
+## Sprint 1.5.1 Phase 1
+- シルク形式Ver.1パーサーを追加
+- 本文形式の自動判定を追加
+- 募集番号、募集馬名、性別、毛色、生年月日、父、母、母父、厩舎、生産、育成、在厩場所、クラス、募集総額、一口価格を取込
+- 募集総額と一口価格から募集口数を補完
+- データモデルへ毛色、在厩場所、クラスを追加
+- 表示バージョンを3.1.5へ更新
