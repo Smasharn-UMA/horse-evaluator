@@ -1,8 +1,8 @@
-# Horse Evaluator 3.0 Core — Sprint 1.7.3
+# Horse Evaluator 3.0 Core — Sprint 1.7.3a
 
 一口馬主向けの出資判断支援アプリです。ブラウザ内保存で動作し、GitHub Pagesへ配置できます。
 
-## Sprint 1.7.3の主な改善
+## Sprint 1.7.3aの主な改善
 
 - ChatGPTの回答全文を、そのまま貼り付けてAI評価を反映
 - 前後の説明文、`json` / `horse-evaluator`コードブロック、スマート引用符に対応
