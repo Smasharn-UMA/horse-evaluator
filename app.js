@@ -1,5 +1,5 @@
 (()=>{'use strict';
-const K='horseEvaluator3',V='3.1.22',UI_K='horseEvaluator3_ui',PRE_IMPORT_K='horseEvaluator3_preImportBackup',$=id=>document.getElementById(id);let state;
+const K='horseEvaluator3',V='3.1.23',UI_K='horseEvaluator3_ui',PRE_IMPORT_K='horseEvaluator3_preImportBackup',$=id=>document.getElementById(id);let state;
 const E={yearFilter:$('yearFilter'),clubFilter:$('clubFilter'),sexFilter:$('sexFilter'),stableAreaFilter:$('stableAreaFilter'),searchInput:$('searchInput'),sortSelect:$('sortSelect'),favoriteOnly:$('favoriteOnly'),dashboard:$('dashboard'),horseList:$('horseList'),resultCount:$('resultCount'),emptyState:$('emptyState'),horseDialog:$('horseDialog'),horseForm:$('horseForm'),detailDialog:$('detailDialog'),detailContent:$('detailContent'),toast:$('toast'),importUrlBtn:$('importUrlBtn'),importStatus:$('importStatus'),importTextBtn:$('importTextBtn'),pageText:$('pageText'),importFormat:$('importFormat'),restoreStatus:$('restoreStatus'),resetFiltersBtn:$('resetFiltersBtn')};
 const DEFAULT_MODEL={name:'標準モデル',weights:{gait:30,body:25,growth:15,measurement:10,pedigree:10,connections:10},thresholds:{s:90,a:80,b:70}};
 const GROUP_LABELS={gait:'歩様',body:'馬体',growth:'成長性',measurement:'測尺',pedigree:'血統・配合',connections:'厩舎・牧場'};
@@ -234,14 +234,68 @@ function openModelSettings(){const m=normalizeModel(state.modelSettings);$('mode
 function setDefaultWeights(){const m=normalizeModel(DEFAULT_MODEL);$('modelName').value=m.name;Object.entries(modelInputs()).forEach(([k,el])=>el.value=m.weights[k]);$('thresholdS').value=m.thresholds.s;$('thresholdA').value=m.thresholds.a;$('thresholdB').value=m.thresholds.b;updateWeightTotal()}
 function renderModelSummary(){const m=normalizeModel(state.modelSettings),w=m.weights,q=m.thresholds;$('modelSummary').textContent=`${m.name}：歩様${w.gait}%・馬体${w.body}%・成長${w.growth}%・測尺${w.measurement}%・配合${w.pedigree}%・厩舎牧場${w.connections}% ／ S${q.s}・A${q.a}・B${q.b}点以上`}
 function exportJ(){const b=new Blob([JSON.stringify({...state,version:V,exportedAt:new Date().toISOString()},null,2)],{type:'application/json'}),u=URL.createObjectURL(b),a=document.createElement('a');a.href=u;a.download=`horse-evaluator-backup-${new Date().toISOString().slice(0,10)}.json`;a.click();URL.revokeObjectURL(u);toast('バックアップを書き出しました')}
-async function importJ(f){const before=state;try{if(E.restoreStatus){E.restoreStatus.textContent='JSONを検証しています…';E.restoreStatus.className='muted'}const text=await f.text();let raw;try{raw=JSON.parse(text)}catch{throw new Error('JSONの構文が不正です。ファイルが途中で切れていないか確認してください。')}const m=migrate(raw),report=validateImport(raw,m);const replace=confirm(`バックアップを検証しました。\n\n元バージョン: ${report.sourceVersion}\n馬データ: ${report.count}頭\n警告: ${report.warnings.length}件\n\n「OK」= 現在のデータを置換\n「キャンセル」= 現在のデータへ追加・更新`);let next;if(replace){next=m}else{const map=new Map(state.horses.map(h=>[h.id,h]));m.horses.forEach(h=>map.set(h.id,h));next={...base(),modelSettings:m.modelSettings||state.modelSettings,horses:[...map.values()]}}next.version=V;next.updatedAt=new Date().toISOString();const nextJson=JSON.stringify(next);const previousJson=localStorage.getItem(K);try{localStorage.removeItem(PRE_IMPORT_K);localStorage.removeItem(K);localStorage.setItem(K,nextJson)}catch(storageError){try{localStorage.removeItem(K);if(previousJson!==null)localStorage.setItem(K,previousJson)}catch(rollbackError){console.error('旧データの再保存にも失敗しました',rollbackError)}throw new Error('復元データを保存できませんでした。既存データを一度削除してから書き込む方式でも容量が不足しています。Safariの「Webサイトデータ」でこのサイトの保存容量を確認してください。')}const persisted=JSON.parse(localStorage.getItem(K)||'{}'),roundTrip=migrate(persisted);if(roundTrip.horses.length!==next.horses.length)throw new Error('保存後の再読込検証で件数が一致しませんでした。');state=roundTrip;render();const msg=`${report.count}頭を${replace?'置換復元':'追加・更新'}しました（保存後検証済み）`;if(E.restoreStatus){E.restoreStatus.textContent=msg;E.restoreStatus.className='muted import-status-ok'}toast(msg)}catch(e){state=before;console.error(e);const msg=`JSONを読み込めませんでした。${e?.message?' '+e.message:''}`;if(E.restoreStatus){E.restoreStatus.textContent=msg;E.restoreStatus.className='muted import-status-error'}alert(msg)}}
-$('newHorseBtn').onclick=openNew;$('closeDialogBtn').onclick=$('cancelBtn').onclick=()=>E.horseDialog.close();$('detailCloseBtn').onclick=()=>E.detailDialog.close();E.importUrlBtn.onclick=importFromUrl;E.importTextBtn.onclick=importFromText;
-$('addVideoUrlBtn').onclick=()=>{const url=prompt('歩様動画または再生ページのURLを入力してください。');if(!url)return;if(editVideos.length>=4){alert('動画URLは1頭4件までです。');return}try{new URL(url)}catch{alert('URLの形式を確認してください。');return}editVideos.push({id:uid(),url:t(url),label:'歩様動画',createdAt:new Date().toISOString()});renderVideoEditor()};$('videoEditorList').onclick=e=>{const b=e.target.closest('[data-video-delete]');if(b){editVideos=editVideos.filter(x=>x.id!==b.dataset.videoDelete);renderVideoEditor()}};$('applyGaitAiJsonBtn').onclick=applyGaitAiJson;$('applyGaitToEvaluationBtn').onclick=applyGaitToEvaluation;$('copyGaitAiTemplateBtn').onclick=copyGaitAiTemplate;$('copyFullAiTemplateBtn').onclick=copyFullAiTemplate;$('applyFullAiJsonBtn').onclick=applyFullAiJson;
-$('photoFiles').onchange=e=>{addPhotoFiles(e.target.files);e.target.value=''};$('addPhotoUrlBtn').onclick=()=>{const src=prompt('画像の直接URLを入力してください。');if(!src)return;if(editPhotos.length>=8){alert('写真は1頭8枚までです。');return}editPhotos.push({id:uid(),src:t(src),type:'url',createdAt:new Date().toISOString(),main:editPhotos.length===0});renderPhotoEditor()};$('photoEditorGallery').onclick=e=>{const del=e.target.closest('[data-photo-delete]'),move=e.target.closest('[data-photo-move]');if(del){editPhotos=editPhotos.filter(x=>x.id!==del.dataset.photoDelete);if(editPhotos.length&&!editPhotos.some(x=>x.main))editPhotos[0].main=true;renderPhotoEditor();return}if(move){const i=editPhotos.findIndex(x=>x.id===move.dataset.id),j=move.dataset.photoMove==='up'?i-1:i+1;if(i>=0&&j>=0&&j<editPhotos.length)[editPhotos[i],editPhotos[j]]=[editPhotos[j],editPhotos[i]];renderPhotoEditor()}};$('photoEditorGallery').onchange=e=>{const r=e.target.closest('[data-photo-main]');if(r){editPhotos.forEach(x=>x.main=x.id===r.dataset.photoMain)}};$('applyPhotoAiJsonBtn').onclick=applyPhotoAiJson;$('copyPhotoAiTemplateBtn').onclick=copyPhotoAiTemplate;E.detailContent.onclick=e=>{if(e.target.closest('.detail-top-close')){E.detailDialog.close();return}const b=e.target.closest('[data-detail-photo]');if(!b)return;const h=state.horses.find(x=>x.id===E.detailDialog.dataset.horseId),pm=normalizePhotos(h);const p=pm.photos[Number(b.dataset.detailPhoto)];if(p&&$('detailMainPhoto'))$('detailMainPhoto').src=p.src};
-E.horseForm.onsubmit=e=>{e.preventDefault();const h=readForm(),i=state.horses.findIndex(x=>x.id===h.id);i>=0?state.horses[i]=h:state.horses.push(h);save();E.horseDialog.close();render();toast(i>=0?'更新しました':'登録しました')};
-[E.yearFilter,E.clubFilter,E.sexFilter,E.stableAreaFilter,E.sortSelect,E.favoriteOnly].forEach(x=>x.onchange=()=>{saveUi();render()});E.searchInput.oninput=()=>{saveUi();render()};E.resetFiltersBtn.onclick=()=>{E.yearFilter.value='';E.clubFilter.value='';E.sexFilter.value='';E.stableAreaFilter.value='';E.searchInput.value='';E.sortSelect.value='horseNo';E.favoriteOnly.checked=false;saveUi();render();toast('表示条件をリセットしました')};
-E.horseList.onclick=e=>{const b=e.target.closest('[data-a]');if(!b)return;const h=state.horses.find(x=>x.id===b.dataset.id);if(b.dataset.a==='edit')openEdit(h.id);if(b.dataset.a==='detail')detail(h.id);if(b.dataset.a==='favorite'){h.favorite=!h.favorite;h.updatedAt=new Date().toISOString();save();render()}if(b.dataset.a==='delete'&&confirm(`「${h.name}」を削除しますか？`)){state.horses=state.horses.filter(x=>x.id!==h.id);save();render()}};
-$('exportBtn').onclick=exportJ;$('importInput').onchange=e=>{if(e.target.files[0])importJ(e.target.files[0]);e.target.value=''};
+async function importJ(f, replace=true){
+  const before=state;
+  try{
+    if(!f) throw new Error('復元ファイルが選択されていません。');
+    if(E.restoreStatus){
+      E.restoreStatus.textContent=`「${f.name}」を読み込んでいます…`;
+      E.restoreStatus.className='muted';
+    }
+    // iOS Safari / ホーム画面追加環境でも確実に読めるようFileReaderを使用
+    const text=await new Promise((resolve,reject)=>{
+      const reader=new FileReader();
+      reader.onload=()=>resolve(String(reader.result||''));
+      reader.onerror=()=>reject(new Error('選択したファイルを読み込めませんでした。'));
+      reader.onabort=()=>reject(new Error('ファイルの読み込みが中断されました。'));
+      reader.readAsText(f,'UTF-8');
+    });
+    if(E.restoreStatus) E.restoreStatus.textContent='JSONを検証しています…';
+    let raw;
+    try{raw=JSON.parse(text)}catch{throw new Error('JSONの構文が不正です。ファイルが途中で切れていないか確認してください。')}
+    const m=migrate(raw),report=validateImport(raw,m);
+    let next;
+    if(replace){
+      next=m;
+    }else{
+      const map=new Map(state.horses.map(h=>[h.id,h]));
+      m.horses.forEach(h=>map.set(h.id,h));
+      next={...base(),modelSettings:m.modelSettings||state.modelSettings,horses:[...map.values()]};
+    }
+    next.version=V;
+    next.updatedAt=new Date().toISOString();
+    const nextJson=JSON.stringify(next);
+    const previousJson=localStorage.getItem(K);
+    if(E.restoreStatus) E.restoreStatus.textContent=`${next.horses.length}頭を保存しています…`;
+    try{
+      localStorage.removeItem(PRE_IMPORT_K);
+      localStorage.removeItem(K);
+      localStorage.setItem(K,nextJson);
+    }catch(storageError){
+      try{localStorage.removeItem(K);if(previousJson!==null)localStorage.setItem(K,previousJson)}catch(rollbackError){console.error('旧データの再保存にも失敗しました',rollbackError)}
+      throw new Error('復元データを保存できませんでした。ブラウザの保存容量が不足している可能性があります。');
+    }
+    const persistedText=localStorage.getItem(K);
+    if(!persistedText) throw new Error('保存後に復元データを確認できませんでした。');
+    const roundTrip=migrate(JSON.parse(persistedText));
+    if(roundTrip.horses.length!==next.horses.length) throw new Error(`保存後の件数が一致しません（予定${next.horses.length}頭／保存${roundTrip.horses.length}頭）。`);
+    state=roundTrip;
+    render();
+    window.scrollTo({top:0,behavior:'instant'});
+    const msg=`${report.count}頭を${replace?'置換復元':'追加・更新'}しました`;
+    if(E.restoreStatus){E.restoreStatus.textContent=msg;E.restoreStatus.className='muted import-status-ok'}
+    toast(msg);
+    alert(msg);
+  }catch(e){
+    state=before;
+    console.error(e);
+    const msg=`JSONを読み込めませんでした。${e?.message?' '+e.message:''}`;
+    if(E.restoreStatus){E.restoreStatus.textContent=msg;E.restoreStatus.className='muted import-status-error'}
+    alert(msg);
+  }
+}
+
+$('exportBtn').onclick=exportJ;$('importInput').addEventListener('change',e=>{const f=e.target.files&&e.target.files[0];if(E.restoreStatus){E.restoreStatus.textContent=f?`「${f.name}」を選択しました。復元を開始します…`:'ファイルが選択されませんでした。';E.restoreStatus.className='muted'}if(f){setTimeout(()=>importJ(f,true),0)}e.target.value='';});
 $('seedBtn').onclick=()=>{const now=new Date().toISOString();state.horses.push({id:uid(),year:2026,club:'ユニオン',horseNo:14,name:'リフレイムの2025',sex:'牝',birthDate:'2025-03-29',sire:'エピファネイア',dam:'リフレイム',broodmareSire:'アメリカンファラオ',stableArea:'美浦',trainer:'黒岩陽一',breeder:'千里ファーム',trainingFarm:'山口ステーブル',price:8800,shareCount:800,sharePrice:110000,recruitmentPr:'Sprint 1.3動作確認用の募集時PRです。',internalId:'UNION-2026-014',measurements:{weight:436,height:150,girth:172,cannon:20.5},sourceUrl:'https://www.union-oc.co.jp/id/4014#open_PHOTO',photoUrl:'',videoUrl:'',favorite:false,notes:'Sprint 1.2動作確認用',evaluation:normalizeEvaluation({}),createdAt:now,updatedAt:now,changeLog:[{at:now,action:'サンプル登録'}]});save();render();toast('サンプルを追加しました')};
 $('modelSettingsBtn').onclick=openModelSettings;$('closeModelBtn').onclick=$('cancelModelBtn').onclick=()=>$('modelDialog').close();Object.values(modelInputs()).forEach(el=>el.oninput=updateWeightTotal);$('resetWeightsBtn').onclick=setDefaultWeights;$('modelForm').onsubmit=e=>{e.preventDefault();const inputs=modelInputs(),weights=Object.fromEntries(Object.entries(inputs).map(([k,el])=>[k,Number(el.value||0)])),total=Object.values(weights).reduce((a,b)=>a+b,0);if(total!==100){alert('重みの合計を100%にしてください。');return}const thresholds={s:Number($('thresholdS').value),a:Number($('thresholdA').value),b:Number($('thresholdB').value)};if(!(thresholds.s>thresholds.a&&thresholds.a>thresholds.b)){alert('推奨度基準は S > A > B の順にしてください。');return}state.modelSettings=normalizeModel({name:$('modelName').value,weights,thresholds});save();$('modelDialog').close();render();toast('評価モデルを保存しました')};
 $('clearBtn').onclick=()=>{if(confirm('全データを削除しますか？')){state=base();save();render()}};initEvaluationControls();state=load();refreshFilters();loadUi();render();})();
