@@ -85,14 +85,12 @@ function parseUnion(text,url){
  const dam=(labelValue(['母'])||first(x,/母\s+([^\n]+?)(?=\s+母の父|\n)/)).replace(/^\*/,'').trim();
  const broodmareSire=(labelValue(['母の父','母父'])||first(x,/母の父\s+([^\n]+?)(?=\s+5代血統表|\s+生年月日|\n)/)).replace(/^\*/,'').trim();
  const top=ls.find(v=>/^\s*(?:PEGASUS\s*)?[0-9]+[\.．\s]+.+/i.test(v))||'';
- const named=labelValue(['募集馬名','募集名','馬名']);
- // 「主な兄姉・近親」以下に現れる兄姉名を募集馬名として誤認しない。
- const beforeRelatives=x.split(/主な兄姉(?:・|・近親|近親)?|兄姉・近親|近親馬/)[0];
- const candidates=[...beforeRelatives.matchAll(/([^\s|｜<>]{1,40}の20\d{2})/g)]
-   .map(m=>m[1].replace(/^(?:兄|姉|半兄|半姉|全兄|全姉)[：:]?/,'').trim())
-   .filter(v=>!/(?:募集|年齢|兄|姉)/.test(v));
- const topName=top.replace(/^\s*(?:PEGASUS\s*)?[0-9]+[\.．\s]+/i,'').replace(/\s+(?:牡|牝|せん|騸)(?:馬)?(?:\s|$)[\s\S]*$/,'').trim();
- const name=named||topName||candidates[0]||(dam&&birthYear?`${dam}の${birthYear}`:'');
+ const relationPrefix=/^(?:兄|姉|弟|妹|半兄|半姉|半弟|半妹|全兄|全姉|全弟|全妹|おじ|おば|叔父|叔母|近親|母|父)[：:]/;
+ const validRecruitmentName=v=>{v=t(v).replace(relationPrefix,'').trim();return /の20\d{2}$/.test(v)&&!relationPrefix.test(t(v))?v:''};
+ const named=validRecruitmentName(labelValue(['募集馬名','募集名','馬名']));
+ const topName=validRecruitmentName(top.replace(/^\s*(?:PEGASUS\s*)?[0-9]+[\.．\s]+/i,'').replace(/\s+(?:牡|牝|せん|騸)(?:馬)?(?:\s|$)[\s\S]*$/,'').trim());
+ // ユニオンの募集名は「母名の出生年」を正とする。兄姉・近親欄の馬名は候補にしない。
+ const name=named||topName||(dam&&birthYear?`${dam}の${birthYear}`:'');
  const sexColor=labelValue(['性別 / 毛色','性別／毛色']);
  const sc=sexColor.split(/[\/／]/).map(v=>v.trim());
  const sexValue=sex(sc[0]||labelValue(['性別'])||first(x,/性別\s*[：:]?\s*(牡|牝|せん|騸)/));
@@ -110,8 +108,10 @@ function parseUnion(text,url){
  const latest=a=>a.length?a[a.length-1]:null;
  const statedYears=[...measureSection.matchAll(/[【〖\[]?(20\d{2})年/g)].map(m=>Number(m[1]));
  const year=latest(statedYears)||(birthYear?Number(birthYear)+1:new Date().getFullYear());
- const prMatch=x.match(/(?:募集時の?PR|募集時の?ＰＲ)\s*[：:]?\s*([\s\S]*?)(?=生産者からの?PR|生産者からの?ＰＲ|主な兄姉(?:・近親)?|兄姉・近親|近況|フォトギャラリー|PHOTO|ムービー|MOVIE|血統表|基本情報|$)/i);
- let recruitmentPr=t(prMatch?.[1]||labelValue(['募集時のPR','募集時PR','募集時のＰＲ','募集時ＰＲ','PR']));
+ // 「募集時のPR」はタブ名で、本文は「生産者からのPR」の直後に掲載される。
+ const producerPr=x.match(/(?:生産者からの?PR|生産者からの?ＰＲ)\s*[：:]?\s*([\s\S]*?)(?=主な兄姉(?:・近親)?|兄姉・近親|近親馬|最新の10件|近況|フォトギャラリー|PHOTO|ムービー|MOVIE|血統表|基本情報|$)/i);
+ const directPr=x.match(/(?:募集時の?PR本文|募集時の?ＰＲ本文)\s*[：:]?\s*([\s\S]*?)(?=主な兄姉(?:・近親)?|兄姉・近親|近親馬|最新の10件|近況|フォトギャラリー|PHOTO|ムービー|MOVIE|血統表|基本情報|$)/i);
+ let recruitmentPr=t(producerPr?.[1]||directPr?.[1]||'');
  recruitmentPr=recruitmentPr.replace(/^(?:ポイント|POINT)\s*[：:]?\s*/i,'').replace(/\n{3,}/g,'\n\n').trim();
  const data={year,club:'ユニオン',horseNo,name,sex:sexValue,coatColor,birthDate,sire,dam,broodmareSire,stableArea,trainer,breeder,trainingFarm,currentLocation:'',horseClass:'',price,shareCount,sharePrice,recruitmentPr,measurements:{weight:latest(all('馬体重','kg')),height:latest(all('体高','cm')),girth:latest(all('胸囲','cm')),cannon:latest(all('管囲','cm'))},sourceUrl:url};
  if(data.sharePrice==null&&data.price!=null&&data.shareCount){data.sharePrice=Math.round((data.price*10000/data.shareCount)/100)*100}
