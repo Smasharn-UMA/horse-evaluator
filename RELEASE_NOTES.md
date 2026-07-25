@@ -15,3 +15,7 @@
 ### Compatibility
 - Sprint 1.3（3.1.0）JSONで検証
 - 59頭の読込、保存、再読込、再書出しの件数一致を確認
+
+
+## Sprint 1.5 (Scaffold)
+- Planned: Silk parser, Union parser improvements, club field, sex field.
