@@ -1,4 +1,4 @@
-# Horse Evaluator 3.0 Core — Sprint 1.5.2 Phase 2
+# Horse Evaluator 3.0 Core — Sprint 1.5.2 Phase 2 Fix 1
 
 iPhone / iPad向けの募集馬管理アプリです。ブラウザのlocalStorageへ保存し、JSONでバックアップ・復元できます。
 
@@ -28,3 +28,7 @@ iPhone / iPad向けの募集馬管理アプリです。ブラウザのlocalStora
 ## データ互換性
 
 Sprint 1.4.1およびSprint 1.5.1のJSONデータを継続利用できます。更新前にJSONバックアップを保存してください。
+
+## Fix 1
+- 主な兄姉・近親欄の「兄」を馬名として取り込む不具合を修正
+- 「募集時のPR／募集時PR／全角ＰＲ」の抽出範囲を改善
