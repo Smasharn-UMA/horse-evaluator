@@ -1,5 +1,5 @@
 (()=>{'use strict';
-const K='horseEvaluator3',V='3.1.9',PRE_IMPORT_K='horseEvaluator3_preImportBackup',$=id=>document.getElementById(id);let state=load();
+const K='horseEvaluator3',V='3.1.10',PRE_IMPORT_K='horseEvaluator3_preImportBackup',$=id=>document.getElementById(id);let state=load();
 const E={yearFilter:$('yearFilter'),clubFilter:$('clubFilter'),sexFilter:$('sexFilter'),stableAreaFilter:$('stableAreaFilter'),searchInput:$('searchInput'),sortSelect:$('sortSelect'),favoriteOnly:$('favoriteOnly'),dashboard:$('dashboard'),horseList:$('horseList'),resultCount:$('resultCount'),emptyState:$('emptyState'),horseDialog:$('horseDialog'),horseForm:$('horseForm'),detailDialog:$('detailDialog'),detailContent:$('detailContent'),toast:$('toast'),importUrlBtn:$('importUrlBtn'),importStatus:$('importStatus'),importTextBtn:$('importTextBtn'),pageText:$('pageText'),importFormat:$('importFormat'),restoreStatus:$('restoreStatus')};
 function base(){return{version:V,app:'Horse Evaluator',horses:[],updatedAt:new Date().toISOString()}}
 function uid(){return crypto.randomUUID?crypto.randomUUID():'h-'+Date.now()+'-'+Math.random().toString(16).slice(2)}
@@ -81,9 +81,10 @@ function parseUnion(text,url){
  const bm=birthText.match(/(20\d{2})(?:年|[\/.-])\s*([0-9]{1,2})(?:月|[\/.-])\s*([0-9]{1,2})日?/);
  const birthDate=bm?`${bm[1]}-${bm[2].padStart(2,'0')}-${bm[3].padStart(2,'0')}`:'';
  const birthYear=bm?bm[1]:'';
- const sire=labelValue(['父'])||first(x,/父\s+([^\n]+?)(?=\s+母\s|\n)/);
- const dam=(labelValue(['母'])||first(x,/母\s+([^\n]+?)(?=\s+母の父|\n)/)).replace(/^\*/,'').trim();
- const broodmareSire=(labelValue(['母の父','母父'])||first(x,/母の父\s+([^\n]+?)(?=\s+5代血統表|\s+生年月日|\n)/)).replace(/^\*/,'').trim();
+ const pedigreeValue=(value)=>t(value).replace(/^\*/,'').split(/[、，,]|(?:\s|^)(?:兄|姉|弟|妹|半兄|半姉|全兄|全姉|母|父)[：:]|主な兄姉・近親/)[0].trim();
+ const sire=pedigreeValue(labelValue(['父'])||first(x,/父\s+([^\n]+?)(?=\s+母\s|\n)/));
+ const dam=pedigreeValue(labelValue(['母'])||first(x,/母\s+([^\n]+?)(?=\s+母の父|\n)/));
+ const broodmareSire=pedigreeValue(labelValue(['母の父','母父'])||first(x,/母の父\s+([^\n]+?)(?=\s+5代血統表|\s+生年月日|\n)/));
  // ユニオン本文には募集馬名がない形式があるため、常に『母名＋出生年』で統一する。
  // 兄姉・近親欄や本文中の固有名詞は馬名候補として一切使用しない。
  const name=dam&&birthYear?`${dam}の${birthYear}`:'';
