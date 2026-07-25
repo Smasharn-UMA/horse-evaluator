@@ -1,6 +1,6 @@
 (()=>{'use strict';
-const K='horseEvaluator3',V='3.1.0',$=id=>document.getElementById(id);let state=load();
-const E={yearFilter:$('yearFilter'),clubFilter:$('clubFilter'),stableAreaFilter:$('stableAreaFilter'),searchInput:$('searchInput'),sortSelect:$('sortSelect'),favoriteOnly:$('favoriteOnly'),dashboard:$('dashboard'),horseList:$('horseList'),resultCount:$('resultCount'),emptyState:$('emptyState'),horseDialog:$('horseDialog'),horseForm:$('horseForm'),detailDialog:$('detailDialog'),detailContent:$('detailContent'),toast:$('toast'),importUrlBtn:$('importUrlBtn'),importStatus:$('importStatus'),importTextBtn:$('importTextBtn'),pageText:$('pageText')};
+const K='horseEvaluator3',V='3.1.1',PRE_IMPORT_K='horseEvaluator3_preImportBackup',$=id=>document.getElementById(id);let state=load();
+const E={yearFilter:$('yearFilter'),clubFilter:$('clubFilter'),stableAreaFilter:$('stableAreaFilter'),searchInput:$('searchInput'),sortSelect:$('sortSelect'),favoriteOnly:$('favoriteOnly'),dashboard:$('dashboard'),horseList:$('horseList'),resultCount:$('resultCount'),emptyState:$('emptyState'),horseDialog:$('horseDialog'),horseForm:$('horseForm'),detailDialog:$('detailDialog'),detailContent:$('detailContent'),toast:$('toast'),importUrlBtn:$('importUrlBtn'),importStatus:$('importStatus'),importTextBtn:$('importTextBtn'),pageText:$('pageText'),restoreStatus:$('restoreStatus')};
 function base(){return{version:V,app:'Horse Evaluator',horses:[],updatedAt:new Date().toISOString()}}
 function uid(){return crypto.randomUUID?crypto.randomUUID():'h-'+Date.now()+'-'+Math.random().toString(16).slice(2)}
 function t(v){return(v??'').toString().trim()} function n(v){return v===''||v==null?null:Number(v)}
@@ -9,11 +9,55 @@ function fmt(d){return d?new Intl.DateTimeFormat('ja-JP',{dateStyle:'medium',tim
 function money(v){return v==null?'―':new Intl.NumberFormat('ja-JP').format(v)}
 function internalId(clubName,year,horseNo,fallback){const c=clubName==='ユニオン'?'UNION':clubName==='キャロット'?'CARROT':clubName==='シルク'?'SILK':'OTHER';const no=horseNo==null?t(fallback).slice(-6):String(horseNo).padStart(3,'0');return `${c}-${year}-${no}`}
 function save(){state.version=V;state.updatedAt=new Date().toISOString();localStorage.setItem(K,JSON.stringify(state))}
-function load(){try{const r=localStorage.getItem(K);return r?migrate(JSON.parse(r)):base()}catch{return base()}}
+function validDate(v,fallback){const d=new Date(v);return Number.isNaN(d.getTime())?fallback:d.toISOString()}
+function pick(...values){for(const v of values)if(v!==undefined&&v!==null&&v!=='')return v;return null}
+function normalizeLog(log,createdAt){if(!Array.isArray(log))return[{at:createdAt,action:'移行・登録'}];return log.map(x=>({at:validDate(x?.at,createdAt),action:t(x?.action)||'更新'}))}
+function load(){try{const r=localStorage.getItem(K);if(!r)return base();const parsed=JSON.parse(r),m=migrate(parsed);return m.horses.length||Array.isArray(parsed?.horses)?m:base()}catch(e){console.error('localStorage読込失敗',e);return base()}}
 function club(v){const s=t(v);if(/carrot|キャロット/i.test(s))return'キャロット';if(/silk|シルク/i.test(s))return'シルク';if(/union|ユニオン/i.test(s))return'ユニオン';return s||'その他'}
 function sex(v){const s=t(v);if(/牡|male|colt/i.test(s))return'牡';if(/牝|female|filly/i.test(s))return'牝';if(/せん|騸|gelding/i.test(s))return'せん';return s}
 function area(v){const s=t(v);if(/美浦/.test(s))return'美浦';if(/栗東/.test(s))return'栗東';if(/地方/.test(s))return'地方';return s}
-function migrate(x){if(Array.isArray(x))x={horses:x};const a=x?.horses||x?.records||x?.items||(x?.horseName?[x]:[]);return{version:V,app:'Horse Evaluator',updatedAt:new Date().toISOString(),horses:a.map((h,i)=>{const m=h.measurements||{};const now=new Date().toISOString();return{id:h.id||uid(),year:Number(h.year||h.recruitmentYear||new Date().getFullYear()),club:club(h.club),horseNo:n(h.horseNo??h.number),name:t(h.name||h.horseName||`名称未設定 ${i+1}`),sex:sex(h.sex),birthDate:t(h.birthDate),sire:t(h.sire||h.father),dam:t(h.dam||h.mother),broodmareSire:t(h.broodmareSire||h.damsire),stableArea:area(h.stableArea||h.affiliation||h.region),trainer:t(h.trainer||h.stable),breeder:t(h.breeder||h.farm),trainingFarm:t(h.trainingFarm),price:n(h.price||h.totalPrice),shareCount:n(h.shareCount||h.recruitmentShares||h.numberOfShares),sharePrice:n(h.sharePrice||h.unitPrice),recruitmentPr:t(h.recruitmentPr||h.pr||h.promotion),internalId:t(h.internalId)||internalId(club(h.club),Number(h.year||h.recruitmentYear||new Date().getFullYear()),n(h.horseNo??h.number),h.id),measurements:{weight:n(m.weight??m.bodyWeight??h.weight),height:n(m.height??h.height),girth:n(m.girth??m.chest??h.girth),cannon:n(m.cannon??m.cannonBone??h.cannon)},sourceUrl:t(h.sourceUrl||h.pageUrl),photoUrl:t(h.photoUrl||h.photo||h.files?.photo),videoUrl:t(h.videoUrl||h.video||h.files?.video),favorite:Boolean(h.favorite),notes:t(h.notes||h.memo),createdAt:h.createdAt||now,updatedAt:h.updatedAt||h.createdAt||now,changeLog:Array.isArray(h.changeLog)?h.changeLog:[{at:h.createdAt||now,action:'移行・登録'}]}})}}
+function sourceArray(x){if(Array.isArray(x))return x;if(!x||typeof x!=='object')throw new Error('JSONの最上位が配列またはオブジェクトではありません。');if(Array.isArray(x.horses))return x.horses;if(Array.isArray(x.records))return x.records;if(Array.isArray(x.items))return x.items;if(x.horseName||x.name)return[x];throw new Error('horses / records / items のいずれにも馬データがありません。')}
+function migrate(x){
+  const a=sourceArray(x),now=new Date().toISOString();
+  return {
+    version:V,sourceVersion:t(x?.version)||'unknown',app:'Horse Evaluator',updatedAt:now,
+    horses:a.map((h,i)=>{
+      if(!h||typeof h!=='object')throw new Error(`${i+1}件目の馬データが不正です。`);
+      const m=h.measurements||h.measurement||h.sizes||{};
+      const createdAt=validDate(pick(h.createdAt,h.registeredAt),now);
+      const updatedAt=validDate(pick(h.updatedAt,h.modifiedAt),createdAt);
+      const yearRaw=pick(h.year,h.recruitmentYear,h.recruitYear,new Date().getFullYear());
+      const year=Number(yearRaw);
+      if(!Number.isFinite(year))throw new Error(`${i+1}件目の年度が不正です。`);
+      const normalizedClub=club(pick(h.club,h.clubName));
+      const horseNo=n(pick(h.horseNo,h.number,h.recruitmentNumber));
+      const id=t(pick(h.id,h.uuid,h.internalId))||uid();
+      return {
+        id,year,club:normalizedClub,horseNo,
+        name:t(pick(h.name,h.horseName,h.recruitmentName))||`名称未設定 ${i+1}`,
+        sex:sex(h.sex),birthDate:t(pick(h.birthDate,h.birthday)),
+        sire:t(pick(h.sire,h.father)),dam:t(pick(h.dam,h.mother)),
+        broodmareSire:t(pick(h.broodmareSire,h.damsire,h.damSire)),
+        stableArea:area(pick(h.stableArea,h.affiliation,h.region)),
+        trainer:t(pick(h.trainer,h.stable)),breeder:t(pick(h.breeder,h.farm,h.productionFarm)),
+        trainingFarm:t(pick(h.trainingFarm,h.trainingCenter)),
+        price:n(pick(h.price,h.totalPrice)),shareCount:n(pick(h.shareCount,h.recruitmentShares,h.numberOfShares)),
+        sharePrice:n(pick(h.sharePrice,h.unitPrice)),recruitmentPr:t(pick(h.recruitmentPr,h.pr,h.promotion)),
+        internalId:t(h.internalId)||internalId(normalizedClub,year,horseNo,id),
+        measurements:{
+          weight:n(pick(m.weight,m.bodyWeight,h.weight,h.bodyWeight)),
+          height:n(pick(m.height,m.bodyHeight,h.height,h.bodyHeight)),
+          girth:n(pick(m.girth,m.chest,h.girth,h.chest)),
+          cannon:n(pick(m.cannon,m.cannonBone,h.cannon,h.cannonBone))
+        },
+        sourceUrl:t(pick(h.sourceUrl,h.pageUrl)),photoUrl:t(pick(h.photoUrl,h.photo,h.files?.photo)),
+        videoUrl:t(pick(h.videoUrl,h.video,h.files?.video)),favorite:Boolean(h.favorite),notes:t(pick(h.notes,h.memo)),
+        createdAt,updatedAt,changeLog:normalizeLog(h.changeLog,createdAt)
+      };
+    })
+  };
+}
+function validateImport(raw,m){const warnings=[];if(!m.horses.length)throw new Error('馬データが0件です。');const ids=new Set();m.horses.forEach((h,i)=>{if(ids.has(h.id))warnings.push(`${i+1}件目: ID重複`);ids.add(h.id);if(!h.name)warnings.push(`${i+1}件目: 馬名なし`)});return{sourceVersion:t(raw?.version)||'不明',count:m.horses.length,warnings}}
 function toast(s){E.toast.textContent=s;E.toast.classList.add('show');clearTimeout(toast.x);toast.x=setTimeout(()=>E.toast.classList.remove('show'),1800)}
 function refreshFilters(){const y=E.yearFilter.value,c=E.clubFilter.value,ys=[...new Set(state.horses.map(h=>h.year))].sort((a,b)=>b-a),cs=[...new Set(state.horses.map(h=>h.club))].sort();E.yearFilter.innerHTML='<option value="">すべて</option>'+ys.map(v=>`<option>${v}</option>`).join('');E.clubFilter.innerHTML='<option value="">すべて</option>'+cs.map(v=>`<option>${esc(v)}</option>`).join('');if(ys.map(String).includes(y))E.yearFilter.value=y;if(cs.includes(c))E.clubFilter.value=c}
 function list(){const y=E.yearFilter.value,c=E.clubFilter.value,a=E.stableAreaFilter.value,q=E.searchInput.value.toLowerCase(),fav=E.favoriteOnly.checked,s=E.sortSelect.value;return state.horses.filter(h=>(!y||String(h.year)===y)&&(!c||h.club===c)&&(!a||h.stableArea===a)&&(!fav||h.favorite)&&(!q||[h.name,h.sire,h.dam,h.broodmareSire,h.stableArea,h.trainer,h.breeder,h.trainingFarm,h.recruitmentPr,h.internalId,h.notes].join(' ').toLowerCase().includes(q))).sort((x,z)=>s==='updatedAt'?new Date(z.updatedAt)-new Date(x.updatedAt):s==='name'?x.name.localeCompare(z.name,'ja'):s==='price'?(z.price||0)-(x.price||0):(x.horseNo??9999)-(z.horseNo??9999))}
@@ -57,7 +101,7 @@ function importedCount(d){return[d.horseNo,d.name,d.sire,d.dam,d.trainer,d.price
 function importFromText(){const text=t(E.pageText?.value);const url=t($('sourceUrl').value);if(!text){setImportStatus('ユニオンページの本文を貼り付けてください。','error');return}try{const d=parseUnion(text,url);const count=importedCount(d);if(count<5)throw new Error('必要な項目を十分に抽出できませんでした。ページ全体をコピーして貼り付けてください。');applyImported(d);const missing=[];if(!d.name)missing.push('馬名');if(!d.breeder)missing.push('生産牧場');setImportStatus(`${count}項目を取得しました。${missing.length?' 未取得：'+missing.join('・')+'。':''} 内容を確認して保存してください。`,'ok');toast('貼り付け本文から基本情報を取得しました')}catch(e){console.error(e);setImportStatus(e.message||'本文からの取込に失敗しました。','error')}}
 async function importFromUrl(){const url=t($('sourceUrl').value);if(!url){setImportStatus('URLを入力してください。','error');return}let u;try{u=new URL(url)}catch{setImportStatus('URLの形式を確認してください。','error');return}if(!/(^|\.)union-oc\.co\.jp$/i.test(u.hostname)){setImportStatus('ユニオン募集馬ページ専用です。','error');return}E.importUrlBtn.disabled=true;setImportStatus('URL取得を試行しています…');try{const text=await fetchPageText(u.origin+u.pathname+u.search);const d=parseUnion(text,url);const count=importedCount(d);if(count<5)throw new Error('必要な項目を十分に抽出できませんでした。');applyImported(d);setImportStatus(`${count}項目を取得しました。内容を確認して保存してください。`,'ok');toast('ユニオン基本情報を取得しました')}catch(e){console.error(e);setImportStatus('URL取得は端末・通信環境により失敗します。下の「ページ本文から取得」を使用してください。','error')}finally{E.importUrlBtn.disabled=false}}
 function exportJ(){const b=new Blob([JSON.stringify({...state,version:V,exportedAt:new Date().toISOString()},null,2)],{type:'application/json'}),u=URL.createObjectURL(b),a=document.createElement('a');a.href=u;a.download=`horse-evaluator-backup-${new Date().toISOString().slice(0,10)}.json`;a.click();URL.revokeObjectURL(u);toast('バックアップを書き出しました')}
-async function importJ(f){try{const m=migrate(JSON.parse(await f.text()));if(!m.horses.length)throw 0;if(confirm(`${m.horses.length}頭を現在のデータに追加しますか？\nキャンセルすると置換します。`)){const map=new Map(state.horses.map(h=>[h.id,h]));m.horses.forEach(h=>map.set(h.id,h));state.horses=[...map.values()]}else state=m;save();render();toast(`${m.horses.length}頭を復元しました`)}catch{alert('JSONを読み込めませんでした。')}}
+async function importJ(f){try{if(E.restoreStatus){E.restoreStatus.textContent='JSONを検証しています…';E.restoreStatus.className='muted'}const text=await f.text();let raw;try{raw=JSON.parse(text)}catch{throw new Error('JSONの構文が不正です。ファイルが途中で切れていないか確認してください。')}const m=migrate(raw),report=validateImport(raw,m);localStorage.setItem(PRE_IMPORT_K,JSON.stringify(state));const replace=confirm(`バックアップを検証しました。\n\n元バージョン: ${report.sourceVersion}\n馬データ: ${report.count}頭\n警告: ${report.warnings.length}件\n\n「OK」= 現在のデータを置換\n「キャンセル」= 現在のデータへ追加・更新`);if(replace){state=m}else{const map=new Map(state.horses.map(h=>[h.id,h]));m.horses.forEach(h=>map.set(h.id,h));state={...base(),horses:[...map.values()]}}save();const persisted=JSON.parse(localStorage.getItem(K)||'{}'),roundTrip=migrate(persisted);if(roundTrip.horses.length!==state.horses.length)throw new Error('保存後の再読込検証で件数が一致しませんでした。');state=roundTrip;render();const msg=`${report.count}頭を${replace?'置換復元':'追加・更新'}しました（保存後検証済み）`;if(E.restoreStatus){E.restoreStatus.textContent=msg;E.restoreStatus.className='muted import-status-ok'}toast(msg)}catch(e){console.error(e);const msg=`JSONを読み込めませんでした。${e?.message?' '+e.message:''}`;if(E.restoreStatus){E.restoreStatus.textContent=msg;E.restoreStatus.className='muted import-status-error'}alert(msg)}}
 $('newHorseBtn').onclick=openNew;$('closeDialogBtn').onclick=$('cancelBtn').onclick=()=>E.horseDialog.close();$('detailCloseBtn').onclick=()=>E.detailDialog.close();E.importUrlBtn.onclick=importFromUrl;E.importTextBtn.onclick=importFromText;
 E.horseForm.onsubmit=e=>{e.preventDefault();const h=readForm(),i=state.horses.findIndex(x=>x.id===h.id);i>=0?state.horses[i]=h:state.horses.push(h);save();E.horseDialog.close();render();toast(i>=0?'更新しました':'登録しました')};
 [E.yearFilter,E.clubFilter,E.stableAreaFilter,E.sortSelect,E.favoriteOnly].forEach(x=>x.onchange=render);E.searchInput.oninput=render;
