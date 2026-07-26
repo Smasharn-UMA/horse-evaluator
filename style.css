@@ -334,3 +334,43 @@
     overflow:visible;
   }
 }
+
+/* Version 1.8.10: reliable iPad-landscape fixed control column.
+   Use a fixed sidebar instead of Safari-sensitive sticky positioning. */
+@media (min-width:801px) and (max-width:1400px) and (orientation:landscape){
+  html,body{
+    max-width:100%;
+    overflow-x:hidden;
+    overflow-y:auto;
+  }
+  .layout{
+    position:relative;
+    grid-template-columns:300px minmax(0,1fr);
+    align-items:start;
+  }
+  .sidebar{
+    position:fixed;
+    top:88px;
+    bottom:12px;
+    left:18px;
+    width:300px;
+    height:auto;
+    max-height:none;
+    overflow-x:hidden;
+    overflow-y:auto;
+    -webkit-overflow-scrolling:touch;
+    overscroll-behavior:contain;
+    padding:0 4px 14px 0;
+    z-index:8;
+  }
+  .sidebar .filter-panel,
+  .sidebar .model-panel,
+  .sidebar .data-panel{
+    width:100%;
+    min-width:0;
+  }
+  .content{
+    grid-column:2;
+    min-width:0;
+  }
+}
