@@ -374,3 +374,22 @@
     min-width:0;
   }
 }
+
+/* Version 1.8.11: iPad-landscape fixed sidebar with a definite scroll viewport.
+   Safari requires an explicit height for reliable touch scrolling in fixed elements. */
+@media (min-width:801px) and (max-width:1400px) and (orientation:landscape){
+  .sidebar{
+    top:88px;
+    bottom:auto;
+    height:calc(100vh - 100px);
+    height:calc(100dvh - 100px);
+    max-height:calc(100vh - 100px);
+    max-height:calc(100dvh - 100px);
+    overflow-y:scroll;
+    overflow-x:hidden;
+    -webkit-overflow-scrolling:touch;
+    touch-action:pan-y;
+    overscroll-behavior-y:auto;
+    padding:0 6px max(28px, env(safe-area-inset-bottom)) 0;
+  }
+}

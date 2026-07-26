@@ -1,7 +1,7 @@
-# Horse Evaluator 3.0 Core — Version 1.8.10 Stable
+# Horse Evaluator 3.0 Core — Version 1.8.11 Stable
 
 iPad横表示で左側の表示条件が途中で切れ、縦スクロールできない問題を修正した安定版です。募集馬一覧カードとデータ処理はVersion 1.8.7から変更していません。
 
-## Version 1.8.10の変更
+## Version 1.8.11の変更
 
 iPad横表示では、表示条件・評価モデル・データ管理を含む左カラムを上部に固定します。左カラム専用のスクロール領域は設けず、ページ全体を通常どおり縦スクロールします。
