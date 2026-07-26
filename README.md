@@ -1,21 +1,14 @@
-# Horse Evaluator 3.0 Version 1.8.15.3
+# Horse Evaluator 3.0 Version 1.8.15.4
 
-AI貼り付け欄の馬間引き継ぎを防止した機能修正版です。
+iPad・iPhone向けの一口馬主募集馬管理・AI評価アプリです。
 
-# Horse Evaluator 3.0 Core — Version 1.8.15.2 Photo Storage Fix
+## 今回の更新
 
-写真ファイルを `localStorage` から分離し、容量の大きい画像データをブラウザの `IndexedDB` に保存する修正版です。募集馬一覧などのレイアウトはVersion 1.8.15から変更していません。
+歩様動画を1頭につき1本、MP4またはMOV形式で添付できます。動画本体はIndexedDBへ保存され、詳細画面で再生できます。動画URLだけを登録する従来方式も利用できます。
 
-## 主な修正
+## 保存構成
 
-- 写真ファイル本体をIndexedDBへ保存
-- 馬の基本情報・測尺・AI評価は従来どおりlocalStorageへ保存
-- 既存のBase64写真は初回起動時にIndexedDBへ自動移行
-- 写真追加時の `The quota has been exceeded.` を回避
-- 写真削除・馬削除・全データ削除時に、対応する画像データも削除
-- JSONバックアップには写真を含め、復元時は写真をIndexedDBへ再配置
-- 編集対象の1頭だけを更新する処理はVersion 1.8.15.1の修正を維持
-
-## 更新方法
-
-既存のGitHub Pagesリポジトリで、ZIP内の全ファイルを上書きしてください。既存データは初回起動時に自動移行されます。更新前にJSONバックアップを保存してください。
+- 基本情報・測尺・AI評価: localStorage
+- 写真: IndexedDB
+- 添付歩様動画: IndexedDB
+- JSONバックアップ: 基本情報・測尺・AI評価・写真を対象。添付動画本体は対象外

@@ -657,3 +657,8 @@
     margin-top:0;
   }
 }
+
+/* Version 1.8.15.4: one attached gait video per horse */
+.detail-video{display:block;width:100%;max-height:520px;margin:12px 0 16px;border-radius:12px;background:#000}
+.video-edit-row video{width:220px;max-width:100%;border-radius:8px;background:#000}
+@media(max-width:600px){.detail-video{max-height:360px}.video-edit-row{align-items:flex-start}.video-edit-row a{display:inline-block}}
