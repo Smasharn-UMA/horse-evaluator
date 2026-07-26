@@ -234,3 +234,33 @@
   .horse-card .card-actions button{padding:7px 5px}
   .horse-card .updated{grid-column:1/-1;grid-row:5;margin-top:0}
 }
+
+/* Version 1.8.6: keep the left control column visible on iPad landscape.
+   Horse-card layout is intentionally unchanged. */
+@media (min-width:1181px) and (max-width:1400px){
+  html,body{max-width:100%}
+  .layout{
+    width:100%;
+    max-width:100%;
+    grid-template-columns:minmax(280px,300px) minmax(0,1fr);
+    gap:18px;
+    padding:18px;
+    margin:0;
+  }
+  .sidebar{
+    display:flex;
+    flex-direction:column;
+    min-width:0;
+    gap:14px;
+    position:sticky;
+    top:92px;
+    align-self:start;
+    max-height:calc(100vh - 112px);
+    overflow-y:auto;
+    overflow-x:hidden;
+  }
+  .sidebar .filter-panel{order:1;margin-bottom:0}
+  .sidebar .model-panel{order:2}
+  .sidebar .data-panel{order:3}
+  .content,.dashboard,.horse-grid,.horse-card{min-width:0}
+}
