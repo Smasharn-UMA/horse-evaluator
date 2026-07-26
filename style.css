@@ -40,3 +40,73 @@
 @media(max-width:1000px){.filter-grid{grid-template-columns:repeat(3,minmax(120px,1fr))}.filter-search{grid-column:span 2}}
 @media(max-width:800px){.layout{grid-template-columns:1fr}.sidebar{order:2}.content{order:1}.filter-grid{grid-template-columns:1fr 1fr}.filter-search{grid-column:1/-1}.filter-reset{width:100%}.horse-card .photo{height:220px}.detail-sticky-head{top:-20px}}
 @media(max-width:430px){.filter-grid{grid-template-columns:1fr}.filter-search{grid-column:auto}.horse-card .photo{height:200px}}
+
+
+/* Version 1.8.2: iPad-only compact workspace (portrait and landscape) */
+@media (min-width:801px) and (max-width:1180px){
+  .layout{
+    grid-template-columns:300px minmax(0,1fr);
+    grid-template-rows:auto auto auto 1fr;
+    align-items:start;
+    max-width:none;
+    gap:18px;
+    padding:18px;
+  }
+  .sidebar,.content{display:contents}
+  .filter-panel{grid-column:1;grid-row:1}
+  .model-panel{grid-column:1;grid-row:2}
+  .data-panel{grid-column:1;grid-row:3}
+  .dashboard{grid-column:2;grid-row:1;margin-bottom:0}
+  .section-title{grid-column:2;grid-row:2;margin:4px 0 12px}
+  .horse-grid{grid-column:2;grid-row:3 / span 2}
+  .empty{grid-column:2;grid-row:3}
+
+  .filter-grid{grid-template-columns:1fr}
+  .filter-search{grid-column:auto}
+  .filter-favorite{min-height:auto;padding:4px 0}
+  .filter-reset{width:100%}
+
+  .dashboard{gap:10px}
+  .stat{padding:12px 14px}
+  .stat .num{font-size:25px}
+
+  .horse-grid{grid-template-columns:1fr}
+  .horse-card{position:relative;min-height:325px;overflow:hidden}
+  .horse-card .photo{
+    position:absolute;
+    z-index:1;
+    top:16px;
+    right:16px;
+    width:190px;
+    height:142px;
+    border:1px solid var(--line);
+    border-radius:12px;
+    background-size:contain;
+    background-repeat:no-repeat;
+    background-position:center;
+  }
+  .horse-card .body{padding:16px 220px 16px 16px;min-height:325px}
+  .horse-card .topline{display:block}
+  .horse-card .topline>div{min-width:0}
+  .horse-card .favorite{
+    position:absolute;
+    z-index:3;
+    top:20px;
+    right:20px;
+    width:38px;
+    height:38px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:0;
+    margin:0;
+    border-radius:999px;
+    background:rgba(255,255,255,.88);
+    box-shadow:0 2px 10px rgba(17,24,39,.18);
+  }
+  .horse-card h3{max-width:calc(100% - 8px)}
+  .horse-card .pedigree{margin-top:16px}
+  .horse-card .metrics{grid-template-columns:repeat(2,1fr)}
+  .horse-card .card-actions{flex-wrap:wrap}
+  .horse-card .card-actions button{min-width:72px}
+}

@@ -1,13 +1,10 @@
-# Horse Evaluator 3.0 Core — Version 1.8.1 Stable
+# Horse Evaluator 3.0 Version 1.8.2 Stable
 
-Sprint 1.7.3cを基礎に、欠落していた画面操作イベントを再構築した安定化版です。
+Version 1.8.1 Stableを基礎に、iPad表示だけを最適化した更新版です。
 
-## 修正対象
-- 新規登録と保存
-- 既存馬の編集と保存
-- 詳細表示
-- JSONバックアップ復元（FileReader方式）
-- 削除・お気に入り・表示条件
-- 写真・動画URL・AI JSON反映
-
-既存の `horseEvaluator3` データ形式を維持します。
+- iPadでは表示条件を左側最上段へ配置
+- 評価モデル、データ管理をその下へ配置
+- iPadの募集馬カードでは写真を右上（従来の星位置）へ移動
+- お気に入りの星は写真右上に重ねて表示
+- iPhoneおよびPCのレイアウトは従来どおり
+- 復元、新規登録、編集、AI解析取込の処理はVersion 1.8.1を維持
