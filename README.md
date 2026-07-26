@@ -1,4 +1,4 @@
-# Horse Evaluator 3.0 Version 1.8.15.4
+# Horse Evaluator 3.0 Version 1.8.15.5
 
 iPad・iPhone向けの一口馬主募集馬管理・AI評価アプリです。
 
