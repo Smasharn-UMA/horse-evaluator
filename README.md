@@ -1,3 +1,7 @@
+# Horse Evaluator 3.0 Version 1.8.15.3
+
+AI貼り付け欄の馬間引き継ぎを防止した機能修正版です。
+
 # Horse Evaluator 3.0 Core — Version 1.8.15.2 Photo Storage Fix
 
 写真ファイルを `localStorage` から分離し、容量の大きい画像データをブラウザの `IndexedDB` に保存する修正版です。募集馬一覧などのレイアウトはVersion 1.8.15から変更していません。
