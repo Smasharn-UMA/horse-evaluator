@@ -264,3 +264,28 @@
   .sidebar .data-panel{order:3}
   .content,.dashboard,.horse-grid,.horse-card{min-width:0}
 }
+
+/* Version 1.8.7: iPad landscape sidebar containment fix */
+@media (min-width:1181px) and (max-width:1400px){
+  .layout{
+    grid-template-columns:300px minmax(0,1fr);
+  }
+  .sidebar .filter-panel{min-width:0;overflow:hidden}
+  .sidebar .filter-grid{
+    display:grid;
+    grid-template-columns:1fr;
+    gap:0;
+    min-width:0;
+  }
+  .sidebar .filter-grid label,
+  .sidebar .filter-search,
+  .sidebar .filter-favorite,
+  .sidebar .filter-reset{
+    grid-column:1;
+    min-width:0;
+    width:100%;
+  }
+  .sidebar select,
+  .sidebar input,
+  .sidebar button{max-width:100%;min-width:0}
+}
