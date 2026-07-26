@@ -289,3 +289,28 @@
   .sidebar input,
   .sidebar button{max-width:100%;min-width:0}
 }
+
+/* Version 1.8.8: iPad landscape vertical scrolling fix.
+   Avoid Safari's unreliable sticky + overflow scrolling combination. */
+@media (min-width:801px) and (max-width:1400px) and (orientation:landscape){
+  html,body{
+    min-height:100%;
+    overflow-x:hidden;
+    overflow-y:auto;
+  }
+  .layout{align-items:start}
+  .sidebar{
+    position:static;
+    top:auto;
+    align-self:start;
+    height:auto;
+    max-height:none;
+    overflow:visible;
+    -webkit-overflow-scrolling:auto;
+  }
+  .sidebar .filter-panel{
+    height:auto;
+    max-height:none;
+    overflow:visible;
+  }
+}
