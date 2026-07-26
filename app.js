@@ -295,12 +295,58 @@ async function importJ(f, replace=true){
   }
 }
 
-$('newHorseBtn').onclick=openNew;$('closeDialogBtn').onclick=$('cancelBtn').onclick=()=>E.horseDialog.close();$('detailCloseBtn').onclick=()=>E.detailDialog.close();E.importUrlBtn.onclick=importFromUrl;E.importTextBtn.onclick=importFromText;
-$('addVideoUrlBtn').onclick=()=>{const url=prompt('歩様動画または再生ページのURLを入力してください。');if(!url)return;if(editVideos.length>=4){alert('動画URLは1頭4件までです。');return}try{new URL(url)}catch{alert('URLの形式を確認してください。');return}editVideos.push({id:uid(),url:t(url),label:'歩様動画',createdAt:new Date().toISOString()});renderVideoEditor()};$('videoEditorList').onclick=e=>{const b=e.target.closest('[data-video-delete]');if(b){editVideos=editVideos.filter(x=>x.id!==b.dataset.videoDelete);renderVideoEditor()}};$('applyGaitAiJsonBtn').onclick=applyGaitAiJson;$('applyGaitToEvaluationBtn').onclick=applyGaitToEvaluation;$('copyGaitAiTemplateBtn').onclick=copyGaitAiTemplate;$('copyFullAiTemplateBtn').onclick=copyFullAiTemplate;$('applyFullAiJsonBtn').onclick=applyFullAiJson;
-$('photoFiles').onchange=e=>{addPhotoFiles(e.target.files);e.target.value=''};$('addPhotoUrlBtn').onclick=()=>{const src=prompt('画像の直接URLを入力してください。');if(!src)return;if(editPhotos.length>=8){alert('写真は1頭8枚までです。');return}editPhotos.push({id:uid(),src:t(src),type:'url',createdAt:new Date().toISOString(),main:editPhotos.length===0});renderPhotoEditor()};$('photoEditorGallery').onclick=e=>{const del=e.target.closest('[data-photo-delete]'),move=e.target.closest('[data-photo-move]');if(del){editPhotos=editPhotos.filter(x=>x.id!==del.dataset.photoDelete);if(editPhotos.length&&!editPhotos.some(x=>x.main))editPhotos[0].main=true;renderPhotoEditor();return}if(move){const i=editPhotos.findIndex(x=>x.id===move.dataset.id),j=move.dataset.photoMove==='up'?i-1:i+1;if(i>=0&&j>=0&&j<editPhotos.length)[editPhotos[i],editPhotos[j]]=[editPhotos[j],editPhotos[i]];renderPhotoEditor()}};$('photoEditorGallery').onchange=e=>{const r=e.target.closest('[data-photo-main]');if(r){editPhotos.forEach(x=>x.main=x.id===r.dataset.photoMain)}};$('applyPhotoAiJsonBtn').onclick=applyPhotoAiJson;$('copyPhotoAiTemplateBtn').onclick=copyPhotoAiTemplate;E.detailContent.onclick=e=>{if(e.target.closest('.detail-top-close')){E.detailDialog.close();return}const b=e.target.closest('[data-detail-photo]');if(!b)return;const h=state.horses.find(x=>x.id===E.detailDialog.dataset.horseId),pm=normalizePhotos(h);const p=pm.photos[Number(b.dataset.detailPhoto)];if(p&&$('detailMainPhoto'))$('detailMainPhoto').src=p.src};
-E.horseForm.onsubmit=e=>{e.preventDefault();const h=readForm(),i=state.horses.findIndex(x=>x.id===h.id);i>=0?state.horses[i]=h:state.horses.push(h);save();E.horseDialog.close();render();toast(i>=0?'更新しました':'登録しました')};
-[E.yearFilter,E.clubFilter,E.sexFilter,E.stableAreaFilter,E.sortSelect,E.favoriteOnly].forEach(x=>x.onchange=()=>{saveUi();render()});E.searchInput.oninput=()=>{saveUi();render()};E.resetFiltersBtn.onclick=()=>{E.yearFilter.value='';E.clubFilter.value='';E.sexFilter.value='';E.stableAreaFilter.value='';E.searchInput.value='';E.sortSelect.value='horseNo';E.favoriteOnly.checked=false;saveUi();render();toast('表示条件をリセットしました')};
-E.horseList.onclick=e=>{const b=e.target.closest('[data-a]');if(!b)return;const h=state.horses.find(x=>x.id===b.dataset.id);if(!h)return;if(b.dataset.a==='edit')openEdit(h.id);if(b.dataset.a==='detail')detail(h.id);if(b.dataset.a==='favorite'){h.favorite=!h.favorite;h.updatedAt=new Date().toISOString();save();render()}if(b.dataset.a==='delete'&&confirm(`「${h.name}」を削除しますか？`)){state.horses=state.horses.filter(x=>x.id!==h.id);save();render()}};
+
+function applyImportedData(data){
+  const fields=['year','club','horseNo','name','sex','coatColor','birthDate','sire','dam','broodmareSire','stableArea','trainer','breeder','trainingFarm','currentLocation','horseClass','price','shareCount','sharePrice','sourceUrl','recruitmentPr'];
+  fields.forEach(k=>{if(data[k]!=null&&$(k))$(k).value=data[k]});
+  const m=data.measurements||{};['weight','height','girth','cannon'].forEach(k=>{if(m[k]!=null)$(k).value=m[k]});
+  setImportStatus('募集馬情報を入力欄へ反映しました。保存ボタンで登録してください。','ok');
+}
+function closeHorseDialog(){if(E.horseDialog.open)E.horseDialog.close()}
+function closeDetailDialog(){if(E.detailDialog.open)E.detailDialog.close()}
+
+$('newHorseBtn').onclick=openNew;
+$('closeDialogBtn').onclick=$('cancelBtn').onclick=closeHorseDialog;
+$('detailCloseBtn').onclick=closeDetailDialog;
+E.detailContent.addEventListener('click',e=>{
+  if(e.target.closest('.detail-top-close')){closeDetailDialog();return}
+  const b=e.target.closest('[data-detail-photo]');
+  if(b){const h=state.horses.find(x=>x.id===E.detailDialog.dataset.horseId),pm=h?normalizePhotos(h):null,img=$('detailMainPhoto');if(pm&&img){const p=pm.photos[Number(b.dataset.detailPhoto)];if(p)img.src=p.src}}
+});
+E.horseList.addEventListener('click',e=>{
+  const b=e.target.closest('[data-a]');if(!b)return;
+  const h=state.horses.find(x=>x.id===b.dataset.id);if(!h)return;
+  if(b.dataset.a==='detail')detail(h.id);
+  if(b.dataset.a==='edit')openEdit(h.id);
+  if(b.dataset.a==='favorite'){h.favorite=!h.favorite;h.updatedAt=new Date().toISOString();try{save();render()}catch(err){alert('お気に入りを保存できませんでした。\n'+err.message)}}
+  if(b.dataset.a==='delete'&&confirm(`「${h.name}」を削除しますか？`)){state.horses=state.horses.filter(x=>x.id!==h.id);try{save();render();toast('削除しました')}catch(err){alert('削除結果を保存できませんでした。\n'+err.message)}}
+});
+E.horseForm.addEventListener('submit',e=>{
+  e.preventDefault();
+  try{
+    const h=readForm();
+    if(!h.name)throw new Error('馬名を入力してください。');
+    if(!Number.isFinite(h.year))throw new Error('年度を入力してください。');
+    const i=state.horses.findIndex(x=>x.id===h.id);
+    if(i>=0)state.horses[i]=h;else state.horses.push(h);
+    save();closeHorseDialog();render();toast(i>=0?'更新しました':'登録しました');
+  }catch(err){console.error(err);alert('保存できませんでした。\n'+(err.message||'入力内容と保存容量を確認してください。'))}
+});
+['yearFilter','clubFilter','sexFilter','stableAreaFilter','sortSelect','favoriteOnly'].forEach(id=>$(id).addEventListener('change',()=>{saveUi();render()}));
+E.searchInput.addEventListener('input',()=>{saveUi();render()});
+E.resetFiltersBtn.onclick=()=>{E.yearFilter.value='';E.clubFilter.value='';E.sexFilter.value='';E.stableAreaFilter.value='';E.searchInput.value='';E.sortSelect.value='horseNo';E.favoriteOnly.checked=false;saveUi();render()};
+$('photoFiles').addEventListener('change',async e=>{await addPhotoFiles(e.target.files||[]);e.target.value=''});
+$('addPhotoUrlBtn').onclick=()=>{const url=prompt('写真URLを入力してください。');if(!url)return;if(editPhotos.length>=8){alert('写真は1頭8枚までです。');return}editPhotos.push({id:uid(),src:t(url),type:'url',createdAt:new Date().toISOString(),main:editPhotos.length===0});renderPhotoEditor()};
+$('photoEditorGallery').addEventListener('click',e=>{const del=e.target.closest('[data-photo-delete]'),move=e.target.closest('[data-photo-move]');if(del){editPhotos=editPhotos.filter(x=>x.id!==del.dataset.photoDelete);if(editPhotos.length&&!editPhotos.some(x=>x.main))editPhotos[0].main=true;renderPhotoEditor()}else if(move){const i=editPhotos.findIndex(x=>x.id===move.dataset.id),j=move.dataset.photoMove==='up'?i-1:i+1;if(i>=0&&j>=0&&j<editPhotos.length){[editPhotos[i],editPhotos[j]]=[editPhotos[j],editPhotos[i]];renderPhotoEditor()}}});
+$('photoEditorGallery').addEventListener('change',e=>{const r=e.target.closest('[data-photo-main]');if(r){editPhotos.forEach(x=>x.main=x.id===r.dataset.photoMain)}});
+$('addVideoUrlBtn').onclick=()=>{const url=prompt('歩様動画URLを入力してください。');if(!url)return;editVideos.push({id:uid(),url:t(url),label:'歩様動画',createdAt:new Date().toISOString()});renderVideoEditor()};
+$('videoEditorList').addEventListener('click',e=>{const b=e.target.closest('[data-video-delete]');if(b){editVideos=editVideos.filter(x=>x.id!==b.dataset.videoDelete);renderVideoEditor()}});
+$('applyPhotoAiJsonBtn').onclick=applyPhotoAiJson;$('copyPhotoAiTemplateBtn').onclick=copyPhotoAiTemplate;
+$('applyGaitAiJsonBtn').onclick=applyGaitAiJson;$('copyGaitAiTemplateBtn').onclick=copyGaitAiTemplate;$('applyGaitToEvaluationBtn').onclick=applyGaitToEvaluation;
+$('applyFullAiJsonBtn').onclick=applyFullAiJson;$('copyFullAiTemplateBtn').onclick=copyFullAiTemplate;
+E.importTextBtn.onclick=()=>{try{const text=E.pageText.value;if(!t(text))throw new Error('ページ本文を貼り付けてください。');const format=E.importFormat.value||detectFormat(text);if(!format)throw new Error('クラブ形式を判定できませんでした。');const data=format==='silk'?parseSilk(text):parseUnion(text,t($('sourceUrl').value));applyImportedData(data)}catch(err){console.error(err);setImportStatus(err.message,'error');alert('本文を取り込めませんでした。\n'+err.message)}};
+E.importUrlBtn.onclick=async()=>{try{const url=t($('sourceUrl').value);if(!url)throw new Error('募集馬ページURLを入力してください。');E.importUrlBtn.disabled=true;setImportStatus('ページ本文を取得しています…');const text=await fetchPageText(url);E.pageText.value=text;const format=E.importFormat.value||detectFormat(text);if(!format)throw new Error('クラブ形式を判定できませんでした。');const data=format==='silk'?parseSilk(text):parseUnion(text,url);applyImportedData(data)}catch(err){console.error(err);setImportStatus(err.message,'error');alert('URLから取り込めませんでした。\n'+err.message)}finally{E.importUrlBtn.disabled=false}};
+
 $('exportBtn').onclick=exportJ;$('importInput').addEventListener('change',e=>{const f=e.target.files&&e.target.files[0];if(E.restoreStatus){E.restoreStatus.textContent=f?`「${f.name}」を選択しました。復元を開始します…`:'ファイルが選択されませんでした。';E.restoreStatus.className='muted'}if(f){setTimeout(()=>importJ(f,true),0)}e.target.value='';});
 $('seedBtn').onclick=()=>{const now=new Date().toISOString();state.horses.push({id:uid(),year:2026,club:'ユニオン',horseNo:14,name:'リフレイムの2025',sex:'牝',birthDate:'2025-03-29',sire:'エピファネイア',dam:'リフレイム',broodmareSire:'アメリカンファラオ',stableArea:'美浦',trainer:'黒岩陽一',breeder:'千里ファーム',trainingFarm:'山口ステーブル',price:8800,shareCount:800,sharePrice:110000,recruitmentPr:'Sprint 1.3動作確認用の募集時PRです。',internalId:'UNION-2026-014',measurements:{weight:436,height:150,girth:172,cannon:20.5},sourceUrl:'https://www.union-oc.co.jp/id/4014#open_PHOTO',photoUrl:'',videoUrl:'',favorite:false,notes:'Sprint 1.2動作確認用',evaluation:normalizeEvaluation({}),createdAt:now,updatedAt:now,changeLog:[{at:now,action:'サンプル登録'}]});save();render();toast('サンプルを追加しました')};
 $('modelSettingsBtn').onclick=openModelSettings;$('closeModelBtn').onclick=$('cancelModelBtn').onclick=()=>$('modelDialog').close();Object.values(modelInputs()).forEach(el=>el.oninput=updateWeightTotal);$('resetWeightsBtn').onclick=setDefaultWeights;$('modelForm').onsubmit=e=>{e.preventDefault();const inputs=modelInputs(),weights=Object.fromEntries(Object.entries(inputs).map(([k,el])=>[k,Number(el.value||0)])),total=Object.values(weights).reduce((a,b)=>a+b,0);if(total!==100){alert('重みの合計を100%にしてください。');return}const thresholds={s:Number($('thresholdS').value),a:Number($('thresholdA').value),b:Number($('thresholdB').value)};if(!(thresholds.s>thresholds.a&&thresholds.a>thresholds.b)){alert('推奨度基準は S > A > B の順にしてください。');return}state.modelSettings=normalizeModel({name:$('modelName').value,weights,thresholds});save();$('modelDialog').close();render();toast('評価モデルを保存しました')};
