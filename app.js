@@ -1,5 +1,5 @@
 (()=>{'use strict';
-const K='horseEvaluator3',V='3.1.28',UI_K='horseEvaluator3_ui',PRE_IMPORT_K='horseEvaluator3_preImportBackup',PHOTO_DB='horseEvaluator3_photos',PHOTO_STORE='photos',VIDEO_DB='horseEvaluator3_videos',VIDEO_STORE='videos',$=id=>document.getElementById(id);let state;
+const K='horseEvaluator3',V='3.1.29',UI_K='horseEvaluator3_ui',PRE_IMPORT_K='horseEvaluator3_preImportBackup',PHOTO_DB='horseEvaluator3_photos',PHOTO_STORE='photos',VIDEO_DB='horseEvaluator3_videos',VIDEO_STORE='videos',$=id=>document.getElementById(id);let state;
 const E={yearFilter:$('yearFilter'),clubFilter:$('clubFilter'),sexFilter:$('sexFilter'),stableAreaFilter:$('stableAreaFilter'),searchInput:$('searchInput'),sortSelect:$('sortSelect'),favoriteOnly:$('favoriteOnly'),dashboard:$('dashboard'),horseList:$('horseList'),resultCount:$('resultCount'),emptyState:$('emptyState'),horseDialog:$('horseDialog'),horseForm:$('horseForm'),detailDialog:$('detailDialog'),detailContent:$('detailContent'),toast:$('toast'),importUrlBtn:$('importUrlBtn'),importStatus:$('importStatus'),importTextBtn:$('importTextBtn'),pageText:$('pageText'),importFormat:$('importFormat'),restoreStatus:$('restoreStatus'),resetFiltersBtn:$('resetFiltersBtn')};
 const DEFAULT_MODEL={name:'標準モデル',weights:{gait:30,body:25,growth:15,measurement:10,pedigree:10,connections:10},thresholds:{s:90,a:80,b:70}};
 const GROUP_LABELS={gait:'歩様',body:'馬体',growth:'成長性',measurement:'測尺',pedigree:'血統・配合',connections:'厩舎・牧場'};
@@ -64,7 +64,25 @@ ${esc(vm.gaitComment)}</div>`:''}${rows?`<div class="photo-ai-score-grid">${rows
 function normalizeJsonText(raw){return String(raw??'').replace(/[“”„‟]/g,'"').replace(/[‘’‚‛]/g,"'").replace(/\u00a0/g,' ').replace(/^\s*```(?:json|horse-evaluator)?\s*/i,'').replace(/\s*```\s*$/,'').trim()}
 function extractJsonObject(raw){const text=normalizeJsonText(raw);if(!text)throw new Error('貼り付け内容が空です。');const candidates=[];const fenced=/```(?:json|horse-evaluator)?\s*([\s\S]*?)```/gi;let m;while((m=fenced.exec(text)))candidates.push(normalizeJsonText(m[1]));candidates.push(text);for(const candidate of candidates){try{return JSON.parse(candidate)}catch{}let depth=0,start=-1,inString=false,escape=false;for(let i=0;i<candidate.length;i++){const ch=candidate[i];if(inString){if(escape)escape=false;else if(ch==='\\')escape=true;else if(ch==='"')inString=false;continue}if(ch==='"'){inString=true;continue}if(ch==='{'){if(depth===0)start=i;depth++}else if(ch==='}'&&depth>0){depth--;if(depth===0&&start>=0){const fragment=candidate.slice(start,i+1);try{return JSON.parse(fragment)}catch{start=-1}}}}}throw new Error('回答内から有効なJSONオブジェクトを抽出できませんでした。')}
 function clearAiImportInputs(){['aiPhotoJson','aiGaitJson','fullAiJson'].forEach(id=>{const el=$(id);if(el)el.value=''})}
-function transferGaitScoresToEvaluation(sourceScores=null){let count=0;GAIT_AI_FIELDS.filter(k=>k!=='overall').forEach(k=>{const sourceValue=sourceScores?scoreValue(sourceScores[k]??sourceScores.scores?.[k]):scoreValue($(GAIT_AI_IDS[k])?.value),ev=$(EVAL_IDS[k]);if(sourceValue!=null&&ev){ev.value=String(sourceValue);ev.dispatchEvent(new Event('change',{bubbles:true}));count++}});return count}
+function transferGaitScoresToEvaluation(sourceScores=null){
+  const keys=['frontRange','hindStep','propulsion','flexibility','stride','rhythm','symmetry','lightness'];
+  let count=0;
+  const missing=[];
+  keys.forEach(k=>{
+    const sourceEl=document.getElementById(GAIT_AI_IDS[k]);
+    const targetEl=document.getElementById(EVAL_IDS[k]);
+    const raw=sourceScores?(sourceScores[k]??sourceScores.scores?.[k]):(sourceEl?sourceEl.value:null);
+    const value=scoreValue(raw);
+    if(!targetEl){missing.push(EVAL_IDS[k]);return}
+    if(value==null)return;
+    targetEl.value=String(value);
+    targetEl.dispatchEvent(new Event('input',{bubbles:true}));
+    targetEl.dispatchEvent(new Event('change',{bubbles:true}));
+    count++;
+  });
+  if(missing.length)console.error('歩様評価シートの転記先が見つかりません:',missing);
+  return count;
+}
 function applyGaitAiJson(){try{const x=extractJsonObject($('aiGaitJson').value);GAIT_AI_FIELDS.forEach(k=>{const v=x[k]??x.scores?.[k];if(v!=null){const el=$(GAIT_AI_IDS[k]);if(el)el.value=scoreValue(v)??''}});if(x.summary!=null)$('aiGaitSummary').value=t(x.summary);const count=transferGaitScoresToEvaluation(x);$('aiGaitJson').value='';toast(count?`AI歩様評価を反映し、評価シートへ${count}項目転記しました`:'AI歩様評価を反映しました')}catch(e){console.error(e);alert('AI歩様評価JSONの形式が正しくありません。')}}
 function applyGaitToEvaluation(){const count=transferGaitScoresToEvaluation();if(!count){alert('転記できる歩様評価がありません。先にAI歩様評価JSONを反映するか、歩様評価を入力してください。');return}toast(`歩様評価シートへ${count}項目転記しました`)}
 function copyGaitAiTemplate(){const payload={horse:t($('name').value)||'募集馬',instruction:'添付した歩様動画を解析し、JSONのみ返してください。',scale:'1=低い、3=標準、5=非常に高い',fields:GAIT_AI_LABELS,output:Object.fromEntries([...GAIT_AI_FIELDS.map(k=>[k,null]),['summary','']])};navigator.clipboard?.writeText(JSON.stringify(payload,null,2)).then(()=>toast('動画AIテンプレートをコピーしました')).catch(()=>alert(JSON.stringify(payload,null,2)))}
@@ -376,7 +394,16 @@ $('videoFile').addEventListener('change',e=>{const f=e.target.files&&e.target.fi
 $('addVideoUrlBtn').onclick=()=>{const current=editVideos[0]?.type==='url'?editVideos[0].url:'';const url=prompt('歩様動画URLを入力してください。',current);if(!url)return;editVideos=[{id:uid(),url:t(url),type:'url',label:'歩様動画',createdAt:new Date().toISOString()}];$('videoUrl').value=t(url);renderVideoEditor()};
 $('videoEditorList').addEventListener('click',e=>{const b=e.target.closest('[data-video-delete]');if(b){editVideos=[];$('videoUrl').value='';renderVideoEditor()}});
 $('applyPhotoAiJsonBtn').onclick=applyPhotoAiJson;$('copyPhotoAiTemplateBtn').onclick=copyPhotoAiTemplate;
-$('applyGaitAiJsonBtn').onclick=applyGaitAiJson;$('copyGaitAiTemplateBtn').onclick=copyGaitAiTemplate;$('applyGaitToEvaluationBtn').onclick=applyGaitToEvaluation;
+$('applyGaitAiJsonBtn').onclick=applyGaitAiJson;
+$('copyGaitAiTemplateBtn').onclick=copyGaitAiTemplate;
+const gaitTransferButton=$('applyGaitToEvaluationBtn');
+if(gaitTransferButton){
+  gaitTransferButton.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();applyGaitToEvaluation()});
+}
+document.addEventListener('click',e=>{
+  const button=e.target.closest&&e.target.closest('#applyGaitToEvaluationBtn');
+  if(button&&button!==gaitTransferButton){e.preventDefault();applyGaitToEvaluation()}
+});
 $('applyFullAiJsonBtn').onclick=applyFullAiJson;$('copyFullAiTemplateBtn').onclick=copyFullAiTemplate;
 E.importTextBtn.onclick=()=>{try{const text=E.pageText.value;if(!t(text))throw new Error('ページ本文を貼り付けてください。');const format=selectedImportFormat(text,t($('sourceUrl').value));if(!format)throw new Error('クラブ形式を判定できませんでした。');const data=format==='silk'?parseSilk(text):parseUnion(text,t($('sourceUrl').value));applyImportedData(data)}catch(err){console.error(err);setImportStatus(err.message,'error');alert('本文を取り込めませんでした。\n'+err.message)}};
 E.importUrlBtn.onclick=async()=>{try{const url=t($('sourceUrl').value);if(!url)throw new Error('募集馬ページURLを入力してください。');E.importUrlBtn.disabled=true;setImportStatus('ページ本文を取得しています…');const text=await fetchPageText(url);E.pageText.value=text;const format=selectedImportFormat(text,url);if(!format)throw new Error('クラブ形式を判定できませんでした。');const data=format==='silk'?parseSilk(text):parseUnion(text,url);applyImportedData(data)}catch(err){console.error(err);setImportStatus(err.message,'error');alert('URLから取り込めませんでした。\n'+err.message)}finally{E.importUrlBtn.disabled=false}};

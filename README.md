@@ -1,14 +1,5 @@
-# Horse Evaluator 3.0 Version 1.8.15.5
+# Horse Evaluator 3.0 Version 1.8.15.6
 
-iPad・iPhone向けの一口馬主募集馬管理・AI評価アプリです。
+歩様評価シートへの個別転記を修正した安定化版です。
 
-## 今回の更新
-
-歩様動画を1頭につき1本、MP4またはMOV形式で添付できます。動画本体はIndexedDBへ保存され、詳細画面で再生できます。動画URLだけを登録する従来方式も利用できます。
-
-## 保存構成
-
-- 基本情報・測尺・AI評価: localStorage
-- 写真: IndexedDB
-- 添付歩様動画: IndexedDB
-- JSONバックアップ: 基本情報・測尺・AI評価・写真を対象。添付動画本体は対象外
+`index.html` をSafariで開いて使用してください。更新時は既存データをJSONバックアップしてからファイルを差し替えてください。
