@@ -314,3 +314,23 @@
     overflow:visible;
   }
 }
+
+/* Version 1.8.9: iPad landscape sticky sidebar without an internal scroll area.
+   The page remains the only vertical scroll container. */
+@media (min-width:801px) and (max-width:1400px) and (orientation:landscape){
+  .layout{align-items:start}
+  .sidebar{
+    position:sticky;
+    top:92px;
+    align-self:start;
+    height:auto;
+    max-height:none;
+    overflow:visible;
+    -webkit-overflow-scrolling:auto;
+  }
+  .sidebar .filter-panel{
+    height:auto;
+    max-height:none;
+    overflow:visible;
+  }
+}
