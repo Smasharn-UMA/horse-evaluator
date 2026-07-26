@@ -1,4 +1,4 @@
-# Horse Evaluator 3.0 Version 1.8.3 Stable
+# Horse Evaluator 3.0 Version 1.8.4 Stable
 
 Version 1.8.2 Stableを基礎に、iPad表示を追加調整した更新版です。
 

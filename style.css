@@ -110,3 +110,87 @@
   .horse-card .card-actions{flex-wrap:nowrap}
   .horse-card .card-actions button{min-width:0}
 }
+
+/* Version 1.8.4: iPad balanced card layout and stable two-column workspace */
+@media (min-width:801px) and (max-width:1180px){
+  /* Keep the three sidebar panels together: filters, model, data. */
+  .layout{
+    display:grid;
+    grid-template-columns:300px minmax(0,1fr);
+    grid-template-rows:auto;
+    align-items:start;
+    max-width:none;
+    gap:18px;
+    padding:18px;
+  }
+  .sidebar{
+    display:flex;
+    position:sticky;
+    top:92px;
+    max-height:calc(100vh - 112px);
+    overflow:auto;
+    order:initial;
+  }
+  .content{
+    display:block;
+    min-width:0;
+    order:initial;
+  }
+  .filter-panel,.model-panel,.data-panel,
+  .dashboard,.section-title,.horse-grid,.empty{
+    grid-column:auto;
+    grid-row:auto;
+    align-self:auto;
+    margin-top:0;
+  }
+  .dashboard{margin-bottom:18px}
+  .section-title{margin:0 0 12px}
+
+  /* Card: photo stays at upper right; information below uses the full width. */
+  .horse-card{min-height:0}
+  .horse-card .body{
+    display:grid;
+    grid-template-columns:minmax(0,1fr) 190px;
+    column-gap:18px;
+    row-gap:10px;
+    padding:16px;
+    min-height:0;
+  }
+  .horse-card .topline{
+    grid-column:1;
+    grid-row:1;
+    min-height:0;
+  }
+  .horse-card .pedigree{
+    grid-column:1;
+    grid-row:2;
+    margin:4px 0 0;
+  }
+  .horse-card .price-box{
+    grid-column:2;
+    grid-row:2;
+    align-self:end;
+    margin:148px 0 0;
+    display:grid;
+    grid-template-columns:1fr;
+    gap:3px;
+    padding:10px 11px;
+  }
+  .horse-card .price-box b,
+  .horse-card .price-box span{font-size:12px}
+  .horse-card .metrics{
+    grid-column:1 / -1;
+    grid-row:3;
+    margin-top:2px;
+  }
+  .horse-card .card-actions{
+    grid-column:1 / -1;
+    grid-row:4;
+    margin-top:2px;
+  }
+  .horse-card .updated{
+    grid-column:1 / -1;
+    grid-row:5;
+    margin-top:0;
+  }
+}
