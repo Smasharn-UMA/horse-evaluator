@@ -1,4 +1,4 @@
-# Horse Evaluator 3.0 Core — Version 1.8.0 Stable
+# Horse Evaluator 3.0 Core — Version 1.8.1 Stable
 
 Sprint 1.7.3cを基礎に、欠落していた画面操作イベントを再構築した安定化版です。
 
