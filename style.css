@@ -194,3 +194,43 @@
     margin-top:0;
   }
 }
+
+/* Version 1.8.5: iPad compact card and fixed sidebar order */
+@media (min-width:801px) and (max-width:1180px){
+  .sidebar{display:flex;flex-direction:column;gap:14px}
+  .sidebar .filter-panel{order:1;margin-bottom:0}
+  .sidebar .model-panel{order:2}
+  .sidebar .data-panel{order:3}
+  .content>.filter-panel{display:none}
+  .dashboard{margin-bottom:12px}
+  .section-title{margin:0 0 10px}
+  .horse-grid{gap:12px}
+
+  .horse-card .body{
+    display:grid;
+    grid-template-columns:minmax(0,1fr) 150px;
+    column-gap:14px;
+    row-gap:8px;
+    padding:14px 218px 12px 14px;
+  }
+  .horse-card .topline{grid-column:1/-1;grid-row:1;min-width:0}
+  .horse-card .pedigree{grid-column:1;grid-row:2;margin:2px 0;line-height:1.5}
+  .horse-card .price-box{
+    grid-column:2;
+    grid-row:2;
+    align-self:center;
+    margin:0;
+    display:flex;
+    flex-direction:column;
+    justify-content:center;
+    gap:4px;
+    padding:10px;
+    min-height:82px;
+  }
+  .horse-card .price-box b,.horse-card .price-box span{font-size:11px;line-height:1.35}
+  .horse-card .metrics{grid-column:1/-1;grid-row:3;margin-top:0;gap:4px}
+  .horse-card .metric{padding:6px 4px}
+  .horse-card .card-actions{grid-column:1/-1;grid-row:4;margin-top:0;gap:6px}
+  .horse-card .card-actions button{padding:7px 5px}
+  .horse-card .updated{grid-column:1/-1;grid-row:5;margin-top:0}
+}
