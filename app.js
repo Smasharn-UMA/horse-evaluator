@@ -1,5 +1,5 @@
 (()=>{'use strict';
-const K='horseEvaluator3',V='3.1.25',UI_K='horseEvaluator3_ui',PRE_IMPORT_K='horseEvaluator3_preImportBackup',$=id=>document.getElementById(id);let state;
+const K='horseEvaluator3',V='3.1.26',UI_K='horseEvaluator3_ui',PRE_IMPORT_K='horseEvaluator3_preImportBackup',PHOTO_DB='horseEvaluator3_photos',PHOTO_STORE='photos',$=id=>document.getElementById(id);let state;
 const E={yearFilter:$('yearFilter'),clubFilter:$('clubFilter'),sexFilter:$('sexFilter'),stableAreaFilter:$('stableAreaFilter'),searchInput:$('searchInput'),sortSelect:$('sortSelect'),favoriteOnly:$('favoriteOnly'),dashboard:$('dashboard'),horseList:$('horseList'),resultCount:$('resultCount'),emptyState:$('emptyState'),horseDialog:$('horseDialog'),horseForm:$('horseForm'),detailDialog:$('detailDialog'),detailContent:$('detailContent'),toast:$('toast'),importUrlBtn:$('importUrlBtn'),importStatus:$('importStatus'),importTextBtn:$('importTextBtn'),pageText:$('pageText'),importFormat:$('importFormat'),restoreStatus:$('restoreStatus'),resetFiltersBtn:$('resetFiltersBtn')};
 const DEFAULT_MODEL={name:'標準モデル',weights:{gait:30,body:25,growth:15,measurement:10,pedigree:10,connections:10},thresholds:{s:90,a:80,b:70}};
 const GROUP_LABELS={gait:'歩様',body:'馬体',growth:'成長性',measurement:'測尺',pedigree:'血統・配合',connections:'厩舎・牧場'};
@@ -53,7 +53,7 @@ function initEvaluationControls(){EVAL_FIELDS.forEach(k=>{const el=$(EVAL_IDS[k]
 
 function normalizeModel(m={}){const w=m.weights||{},q=m.thresholds||{};return{name:t(m.name)||DEFAULT_MODEL.name,weights:{gait:Number(w.gait??30),body:Number(w.body??25),growth:Number(w.growth??15),measurement:Number(w.measurement??10),pedigree:Number(w.pedigree??10),connections:Number(w.connections??10)},thresholds:{s:Number(q.s??90),a:Number(q.a??80),b:Number(q.b??70)}}}
 function normalizePhotoAi(x={}){const scores={};PHOTO_AI_FIELDS.forEach(k=>scores[k]=scoreValue(x?.scores?.[k]??x?.[k]));return{scores,summary:t(x.summary),updatedAt:t(x.updatedAt)}}
-function normalizePhotos(h={}){const src=Array.isArray(h.photos)?h.photos:[];const photos=src.map((x,i)=>typeof x==='string'?{id:uid(),src:x,type:x.startsWith('data:')?'file':'url',createdAt:new Date().toISOString()}:{id:t(x?.id)||uid(),src:t(x?.src||x?.url||x?.dataUrl),type:t(x?.type)||(t(x?.src).startsWith('data:')?'file':'url'),createdAt:t(x?.createdAt)||new Date().toISOString()}).filter(x=>x.src);if(!photos.length&&t(h.photoUrl))photos.push({id:uid(),src:t(h.photoUrl),type:'url',createdAt:new Date().toISOString()});let main=t(h.mainPhotoId);if(!photos.some(x=>x.id===main))main=photos[0]?.id||'';return{photos,mainPhotoId:main,photoComment:t(h.photoComment),photoAi:normalizePhotoAi(h.photoAi)}}
+function normalizePhotos(h={}){const src=Array.isArray(h.photos)?h.photos:[];const photos=src.map((x,i)=>typeof x==='string'?{id:uid(),src:x,type:x.startsWith('data:')?'file':'url',createdAt:new Date().toISOString()}:{id:t(x?.id)||uid(),src:t(x?.src||x?.url||x?.dataUrl),dbKey:t(x?.dbKey),type:t(x?.type)||(t(x?.src).startsWith('data:')?'file':'url'),createdAt:t(x?.createdAt)||new Date().toISOString()}).filter(x=>x.src||x.dbKey);if(!photos.length&&t(h.photoUrl))photos.push({id:uid(),src:t(h.photoUrl),type:'url',createdAt:new Date().toISOString()});let main=t(h.mainPhotoId);if(!photos.some(x=>x.id===main))main=photos[0]?.id||'';return{photos,mainPhotoId:main,photoComment:t(h.photoComment),photoAi:normalizePhotoAi(h.photoAi)}}
 
 function normalizeGaitAi(x={}){const scores={};GAIT_AI_FIELDS.forEach(k=>scores[k]=scoreValue(x?.scores?.[k]??x?.[k]));return{scores,summary:t(x.summary),updatedAt:t(x.updatedAt)}}
 function normalizeVideos(h={}){const src=Array.isArray(h.videos)?h.videos:[];const videos=src.map(x=>typeof x==='string'?{id:uid(),url:t(x),label:'歩様動画'}:{id:t(x?.id)||uid(),url:t(x?.url||x?.src),label:t(x?.label)||'歩様動画',createdAt:t(x?.createdAt)||new Date().toISOString()}).filter(x=>x.url);if(!videos.length&&t(h.videoUrl))videos.push({id:uid(),url:t(h.videoUrl),label:'歩様動画',createdAt:new Date().toISOString()});return{videos,gaitComment:t(h.gaitComment),gaitAi:normalizeGaitAi(h.gaitAi)}}
@@ -77,7 +77,17 @@ function esc(v){return t(v).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'
 function fmt(d){return d?new Intl.DateTimeFormat('ja-JP',{dateStyle:'medium',timeStyle:'short'}).format(new Date(d)):'―'}
 function money(v){return v==null?'―':new Intl.NumberFormat('ja-JP').format(v)}
 function internalId(clubName,year,horseNo,fallback){const c=clubName==='ユニオン'?'UNION':clubName==='キャロット'?'CARROT':clubName==='シルク'?'SILK':'OTHER';const no=horseNo==null?t(fallback).slice(-6):String(horseNo).padStart(3,'0');return `${c}-${year}-${no}`}
-function save(nextState=state){const candidate={...nextState,version:V,updatedAt:new Date().toISOString()},nextJson=JSON.stringify(candidate),previousJson=localStorage.getItem(K);try{localStorage.removeItem(PRE_IMPORT_K);localStorage.removeItem(K);localStorage.setItem(K,nextJson);const check=localStorage.getItem(K);if(check!==nextJson)throw new Error('保存後のデータ確認に失敗しました。');return candidate}catch(error){try{localStorage.removeItem(K);if(previousJson!==null)localStorage.setItem(K,previousJson)}catch(rollbackError){console.error('保存データの復旧にも失敗しました',rollbackError)}const quota=error?.name==='QuotaExceededError'||/quota/i.test(error?.message||'');throw new Error(quota?'ブラウザの保存容量が不足しています。不要な写真を削除するか、JSONバックアップ後にデータを整理してください。':(error?.message||'保存処理に失敗しました。'))}}
+function openPhotoDb(){return new Promise((resolve,reject)=>{const req=indexedDB.open(PHOTO_DB,1);req.onupgradeneeded=()=>{const db=req.result;if(!db.objectStoreNames.contains(PHOTO_STORE))db.createObjectStore(PHOTO_STORE,{keyPath:'id'})};req.onsuccess=()=>resolve(req.result);req.onerror=()=>reject(req.error||new Error('写真保存領域を開けませんでした。'))})}
+async function photoDbPut(id,data){const db=await openPhotoDb();return new Promise((resolve,reject)=>{const tx=db.transaction(PHOTO_STORE,'readwrite');tx.objectStore(PHOTO_STORE).put({id,data,updatedAt:new Date().toISOString()});tx.oncomplete=()=>{db.close();resolve()};tx.onerror=()=>{db.close();reject(tx.error||new Error('写真を保存できませんでした。'))};tx.onabort=()=>{db.close();reject(tx.error||new Error('写真保存が中断されました。'))}})}
+async function photoDbGet(id){const db=await openPhotoDb();return new Promise((resolve,reject)=>{const tx=db.transaction(PHOTO_STORE,'readonly'),req=tx.objectStore(PHOTO_STORE).get(id);req.onsuccess=()=>resolve(req.result?.data||'');req.onerror=()=>reject(req.error||new Error('写真を読み込めませんでした。'));tx.oncomplete=()=>db.close();tx.onabort=()=>db.close()})}
+async function photoDbDelete(id){if(!id)return;const db=await openPhotoDb();return new Promise((resolve,reject)=>{const tx=db.transaction(PHOTO_STORE,'readwrite');tx.objectStore(PHOTO_STORE).delete(id);tx.oncomplete=()=>{db.close();resolve()};tx.onerror=()=>{db.close();reject(tx.error)};tx.onabort=()=>{db.close();reject(tx.error)}})}
+async function photoDbClear(){const db=await openPhotoDb();return new Promise((resolve,reject)=>{const tx=db.transaction(PHOTO_STORE,'readwrite');tx.objectStore(PHOTO_STORE).clear();tx.oncomplete=()=>{db.close();resolve()};tx.onerror=()=>{db.close();reject(tx.error)}})}
+function persistableState(input){const out=typeof structuredClone==='function'?structuredClone(input):JSON.parse(JSON.stringify(input));(out.horses||[]).forEach(h=>{if(!Array.isArray(h.photos))return;h.photos=h.photos.map(p=>{const q={...p};if(q.type==='file'||String(q.src||'').startsWith('data:')){q.dbKey=q.dbKey||q.id;delete q.src;delete q.dataUrl}return q})});return out}
+async function persistHorsePhotos(h){for(const p of h.photos||[]){if((p.type==='file'||String(p.src||'').startsWith('data:'))&&p.src){await photoDbPut(p.dbKey||p.id,p.src);p.dbKey=p.dbKey||p.id}}return h}
+async function persistHorsePhotosForState(input){for(const h of input.horses||[])await persistHorsePhotos(h);return input}
+async function hydrateStatePhotos(input){for(const h of input.horses||[]){for(const p of h.photos||[]){if(!p.src&&p.dbKey){try{p.src=await photoDbGet(p.dbKey)}catch(e){console.warn('写真読込失敗',p.dbKey,e)}}}}return input}
+async function migrateLegacyPhotos(input){let changed=false;for(const h of input.horses||[]){for(const p of h.photos||[]){if(String(p.src||'').startsWith('data:')){await photoDbPut(p.id,p.src);p.dbKey=p.id;changed=true}}}if(changed)save(input);return input}
+function save(nextState=state){const candidate={...nextState,version:V,updatedAt:new Date().toISOString()},stored=persistableState(candidate),nextJson=JSON.stringify(stored),previousJson=localStorage.getItem(K);try{localStorage.removeItem(PRE_IMPORT_K);localStorage.removeItem(K);localStorage.setItem(K,nextJson);const check=localStorage.getItem(K);if(check!==nextJson)throw new Error('保存後のデータ確認に失敗しました。');return candidate}catch(error){try{localStorage.removeItem(K);if(previousJson!==null)localStorage.setItem(K,previousJson)}catch(rollbackError){console.error('保存データの復旧にも失敗しました',rollbackError)}const quota=error?.name==='QuotaExceededError'||/quota/i.test(error?.message||'');throw new Error(quota?'ブラウザの基本データ保存容量が不足しています。JSONバックアップ後に不要なデータを整理してください。':(error?.message||'保存処理に失敗しました。'))}}
 function validDate(v,fallback){const d=new Date(v);return Number.isNaN(d.getTime())?fallback:d.toISOString()}
 function pick(...values){for(const v of values)if(v!==undefined&&v!==null&&v!=='')return v;return null}
 function normalizeLog(log,createdAt){if(!Array.isArray(log))return[{at:createdAt,action:'移行・登録'}];return log.map(x=>({at:validDate(x?.at,createdAt),action:t(x?.action)||'更新'}))}
@@ -238,7 +248,7 @@ function updateWeightTotal(){const total=Object.values(modelInputs()).reduce((s,
 function openModelSettings(){const m=normalizeModel(state.modelSettings);$('modelName').value=m.name;Object.entries(modelInputs()).forEach(([k,el])=>el.value=m.weights[k]);$('thresholdS').value=m.thresholds.s;$('thresholdA').value=m.thresholds.a;$('thresholdB').value=m.thresholds.b;updateWeightTotal();$('modelDialog').showModal()}
 function setDefaultWeights(){const m=normalizeModel(DEFAULT_MODEL);$('modelName').value=m.name;Object.entries(modelInputs()).forEach(([k,el])=>el.value=m.weights[k]);$('thresholdS').value=m.thresholds.s;$('thresholdA').value=m.thresholds.a;$('thresholdB').value=m.thresholds.b;updateWeightTotal()}
 function renderModelSummary(){const m=normalizeModel(state.modelSettings),w=m.weights,q=m.thresholds;$('modelSummary').textContent=`${m.name}：歩様${w.gait}%・馬体${w.body}%・成長${w.growth}%・測尺${w.measurement}%・配合${w.pedigree}%・厩舎牧場${w.connections}% ／ S${q.s}・A${q.a}・B${q.b}点以上`}
-function exportJ(){const b=new Blob([JSON.stringify({...state,version:V,exportedAt:new Date().toISOString()},null,2)],{type:'application/json'}),u=URL.createObjectURL(b),a=document.createElement('a');a.href=u;a.download=`horse-evaluator-backup-${new Date().toISOString().slice(0,10)}.json`;a.click();URL.revokeObjectURL(u);toast('バックアップを書き出しました')}
+async function exportJ(){await hydrateStatePhotos(state);const b=new Blob([JSON.stringify({...state,version:V,exportedAt:new Date().toISOString()},null,2)],{type:'application/json'}),u=URL.createObjectURL(b),a=document.createElement('a');a.href=u;a.download=`horse-evaluator-backup-${new Date().toISOString().slice(0,10)}.json`;a.click();URL.revokeObjectURL(u);toast('バックアップを書き出しました')}
 async function importJ(f, replace=true){
   const before=state;
   try{
@@ -269,7 +279,8 @@ async function importJ(f, replace=true){
     }
     next.version=V;
     next.updatedAt=new Date().toISOString();
-    const nextJson=JSON.stringify(next);
+    await persistHorsePhotosForState(next);
+    const nextJson=JSON.stringify(persistableState(next));
     const previousJson=localStorage.getItem(K);
     if(E.restoreStatus) E.restoreStatus.textContent=`${next.horses.length}頭を保存しています…`;
     try{
@@ -284,7 +295,7 @@ async function importJ(f, replace=true){
     if(!persistedText) throw new Error('保存後に復元データを確認できませんでした。');
     const roundTrip=migrate(JSON.parse(persistedText));
     if(roundTrip.horses.length!==next.horses.length) throw new Error(`保存後の件数が一致しません（予定${next.horses.length}頭／保存${roundTrip.horses.length}頭）。`);
-    state=roundTrip;
+    state=await hydrateStatePhotos(roundTrip);
     render();
     window.scrollTo({top:0,behavior:'instant'});
     const msg=`${report.count}頭を${replace?'置換復元':'追加・更新'}しました`;
@@ -318,25 +329,27 @@ E.detailContent.addEventListener('click',e=>{
   const b=e.target.closest('[data-detail-photo]');
   if(b){const h=state.horses.find(x=>x.id===E.detailDialog.dataset.horseId),pm=h?normalizePhotos(h):null,img=$('detailMainPhoto');if(pm&&img){const p=pm.photos[Number(b.dataset.detailPhoto)];if(p)img.src=p.src}}
 });
-E.horseList.addEventListener('click',e=>{
+E.horseList.addEventListener('click',async e=>{
   const b=e.target.closest('[data-a]');if(!b)return;
   const h=state.horses.find(x=>x.id===b.dataset.id);if(!h)return;
   if(b.dataset.a==='detail')detail(h.id);
   if(b.dataset.a==='edit')openEdit(h.id);
   if(b.dataset.a==='favorite'){h.favorite=!h.favorite;h.updatedAt=new Date().toISOString();try{save();render()}catch(err){alert('お気に入りを保存できませんでした。\n'+err.message)}}
-  if(b.dataset.a==='delete'&&confirm(`「${h.name}」を削除しますか？`)){state.horses=state.horses.filter(x=>x.id!==h.id);try{save();render();toast('削除しました')}catch(err){alert('削除結果を保存できませんでした。\n'+err.message)}}
+  if(b.dataset.a==='delete'&&confirm(`「${h.name}」を削除しますか？`)){const keys=(h.photos||[]).map(p=>p.dbKey||p.id);const before=state;state={...state,horses:state.horses.filter(x=>x.id!==h.id)};try{state=save(state);for(const key of keys)await photoDbDelete(key).catch(console.warn);render();toast('削除しました')}catch(err){state=before;alert('削除結果を保存できませんでした。\n'+err.message)}}
 });
-E.horseForm.addEventListener('submit',e=>{
+E.horseForm.addEventListener('submit',async e=>{
   e.preventDefault();
   try{
     const h=readForm();
     if(!h.name)throw new Error('馬名を入力してください。');
     if(!Number.isFinite(h.year))throw new Error('年度を入力してください。');
     const i=state.horses.findIndex(x=>x.id===h.id);
+    const oldPhotoKeys=i>=0?(state.horses[i].photos||[]).map(p=>p.dbKey||p.id):[];
+    await persistHorsePhotos(h);
     const nextHorses=state.horses.map(x=>typeof structuredClone==='function'?structuredClone(x):JSON.parse(JSON.stringify(x)));
     if(i>=0)nextHorses[i]=h;else nextHorses.push(h);
     const saved=save({...state,horses:nextHorses});
-    state=saved;closeHorseDialog();render();toast(i>=0?'更新しました':'登録しました');
+    state=saved;const newPhotoKeys=new Set((h.photos||[]).map(p=>p.dbKey||p.id));for(const key of oldPhotoKeys)if(key&&!newPhotoKeys.has(key))photoDbDelete(key).catch(console.warn);closeHorseDialog();render();toast(i>=0?'更新しました':'登録しました');
   }catch(err){console.error(err);alert('保存できませんでした。\n'+(err.message||'入力内容と保存容量を確認してください。'))}
 });
 ['yearFilter','clubFilter','sexFilter','stableAreaFilter','sortSelect','favoriteOnly'].forEach(id=>$(id).addEventListener('change',()=>{saveUi();render()}));
@@ -357,4 +370,4 @@ E.importUrlBtn.onclick=async()=>{try{const url=t($('sourceUrl').value);if(!url)t
 $('exportBtn').onclick=exportJ;$('importInput').addEventListener('change',e=>{const f=e.target.files&&e.target.files[0];if(E.restoreStatus){E.restoreStatus.textContent=f?`「${f.name}」を選択しました。復元を開始します…`:'ファイルが選択されませんでした。';E.restoreStatus.className='muted'}if(f){setTimeout(()=>importJ(f,true),0)}e.target.value='';});
 $('seedBtn').onclick=()=>{const now=new Date().toISOString();state.horses.push({id:uid(),year:2026,club:'ユニオン',horseNo:14,name:'リフレイムの2025',sex:'牝',birthDate:'2025-03-29',sire:'エピファネイア',dam:'リフレイム',broodmareSire:'アメリカンファラオ',stableArea:'美浦',trainer:'黒岩陽一',breeder:'千里ファーム',trainingFarm:'山口ステーブル',price:8800,shareCount:800,sharePrice:110000,recruitmentPr:'Sprint 1.3動作確認用の募集時PRです。',internalId:'UNION-2026-014',measurements:{weight:436,height:150,girth:172,cannon:20.5},sourceUrl:'https://www.union-oc.co.jp/id/4014#open_PHOTO',photoUrl:'',videoUrl:'',favorite:false,notes:'Sprint 1.2動作確認用',evaluation:normalizeEvaluation({}),createdAt:now,updatedAt:now,changeLog:[{at:now,action:'サンプル登録'}]});save();render();toast('サンプルを追加しました')};
 $('modelSettingsBtn').onclick=openModelSettings;$('closeModelBtn').onclick=$('cancelModelBtn').onclick=()=>$('modelDialog').close();Object.values(modelInputs()).forEach(el=>el.oninput=updateWeightTotal);$('resetWeightsBtn').onclick=setDefaultWeights;$('modelForm').onsubmit=e=>{e.preventDefault();const inputs=modelInputs(),weights=Object.fromEntries(Object.entries(inputs).map(([k,el])=>[k,Number(el.value||0)])),total=Object.values(weights).reduce((a,b)=>a+b,0);if(total!==100){alert('重みの合計を100%にしてください。');return}const thresholds={s:Number($('thresholdS').value),a:Number($('thresholdA').value),b:Number($('thresholdB').value)};if(!(thresholds.s>thresholds.a&&thresholds.a>thresholds.b)){alert('推奨度基準は S > A > B の順にしてください。');return}state.modelSettings=normalizeModel({name:$('modelName').value,weights,thresholds});save();$('modelDialog').close();render();toast('評価モデルを保存しました')};
-$('clearBtn').onclick=()=>{if(confirm('全データを削除しますか？')){state=base();save();render()}};initEvaluationControls();state=load();refreshFilters();loadUi();render();})();
+$('clearBtn').onclick=async()=>{if(confirm('全データを削除しますか？')){state=base();save();await photoDbClear().catch(console.warn);render()}};async function initApp(){initEvaluationControls();state=load();await migrateLegacyPhotos(state);await hydrateStatePhotos(state);refreshFilters();loadUi();render()}initApp().catch(e=>{console.error(e);alert('アプリの初期化中にエラーが発生しました。\n'+e.message)});})();
