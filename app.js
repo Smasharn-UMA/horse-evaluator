@@ -1,5 +1,5 @@
 (()=>{'use strict';
-const K='horseEvaluator3',V='2.0.0',DATA_SCHEMA=2,UI_K='horseEvaluator3_ui',PRE_IMPORT_K='horseEvaluator3_preImportBackup',PHOTO_DB='horseEvaluator3_photos',PHOTO_STORE='photos',VIDEO_DB='horseEvaluator3_videos',VIDEO_STORE='videos',$=id=>document.getElementById(id);let state;
+const K='horseEvaluator3',V='2.0.1',DATA_SCHEMA=2,UI_K='horseEvaluator3_ui',PRE_IMPORT_K='horseEvaluator3_preImportBackup',PHOTO_DB='horseEvaluator3_photos',PHOTO_STORE='photos',VIDEO_DB='horseEvaluator3_videos',VIDEO_STORE='videos',$=id=>document.getElementById(id);let state;
 const E={yearFilter:$('yearFilter'),clubFilter:$('clubFilter'),sexFilter:$('sexFilter'),stableAreaFilter:$('stableAreaFilter'),searchInput:$('searchInput'),sortSelect:$('sortSelect'),favoriteOnly:$('favoriteOnly'),dashboard:$('dashboard'),horseList:$('horseList'),resultCount:$('resultCount'),emptyState:$('emptyState'),horseDialog:$('horseDialog'),horseForm:$('horseForm'),detailDialog:$('detailDialog'),detailContent:$('detailContent'),toast:$('toast'),importUrlBtn:$('importUrlBtn'),importStatus:$('importStatus'),importTextBtn:$('importTextBtn'),pageText:$('pageText'),importFormat:$('importFormat'),restoreStatus:$('restoreStatus'),resetFiltersBtn:$('resetFiltersBtn')};
 const DEFAULT_MODEL={name:'標準モデル',weights:{gait:30,body:25,growth:15,measurement:10,pedigree:10,connections:10},thresholds:{s:90,a:80,b:70}};
 const GROUP_LABELS={gait:'歩様',body:'馬体',growth:'成長性',measurement:'測尺',pedigree:'血統・配合',connections:'厩舎・牧場'};
@@ -112,7 +112,31 @@ async function videoDbClear(){const db=await openVideoDb();return new Promise((r
 function persistableState(input){const out=typeof structuredClone==='function'?structuredClone(input):JSON.parse(JSON.stringify(input));(out.horses||[]).forEach(h=>{if(Array.isArray(h.photos))h.photos=h.photos.map(p=>{const q={...p};if(q.type==='file'||String(q.src||'').startsWith('data:')){q.dbKey=q.dbKey||q.id;delete q.src;delete q.dataUrl}return q});if(Array.isArray(h.videos))h.videos=h.videos.slice(0,1).map(v=>{const q={...v};if(q.type==='file'||q.dbKey){q.dbKey=q.dbKey||q.id;delete q.src;delete q._blob}return q})});return out}
 async function persistHorsePhotos(h){for(const p of h.photos||[]){if((p.type==='file'||String(p.src||'').startsWith('data:'))&&p.src){await photoDbPut(p.dbKey||p.id,p.src);p.dbKey=p.dbKey||p.id}}return h}
 async function persistHorseVideos(h){for(const v of h.videos||[]){if(v.type==='file'&&v._blob){await videoDbPut(v.dbKey||v.id,v._blob);v.dbKey=v.dbKey||v.id;delete v._blob}}return h}
-async function persistHorsePhotosForState(input){for(const h of input.horses||[])await persistHorsePhotos(h);return input}
+async function persistHorsePhotosForState(input){
+  const failures=[];
+  for(const h of input.horses||[]){
+    const kept=[];
+    for(const p of h.photos||[]){
+      if((p.type==='file'||String(p.src||'').startsWith('data:'))&&p.src){
+        try{
+          const key=p.dbKey||p.id||uid();
+          p.id=p.id||key;
+          await photoDbPut(key,p.src);
+          p.dbKey=key;
+          kept.push(p);
+        }catch(error){
+          console.warn('復元写真の保存をスキップしました',h.name,p.id,error);
+          failures.push(`${h.name||'名称未設定'}: 写真`);
+        }
+      }else{
+        kept.push(p);
+      }
+    }
+    h.photos=kept.slice(0,1);
+    h.mainPhotoId=h.photos[0]?.id||'';
+  }
+  return{state:input,failures};
+}
 async function hydrateStatePhotos(input){for(const h of input.horses||[]){for(const p of h.photos||[]){if(!p.src&&p.dbKey){try{p.src=await photoDbGet(p.dbKey)}catch(e){console.warn('写真読込失敗',p.dbKey,e)}}}}return input}
 async function hydrateStateVideos(input){for(const h of input.horses||[]){for(const v of h.videos||[]){if(v.type==='file'&&v.dbKey&&!v.src){try{const blob=await videoDbGet(v.dbKey);if(blob)v.src=URL.createObjectURL(blob)}catch(e){console.warn('動画読込失敗',v.dbKey,e)}}}}return input}
 async function migrateLegacyPhotos(input){let changed=false;for(const h of input.horses||[]){for(const p of h.photos||[]){if(String(p.src||'').startsWith('data:')){await photoDbPut(p.id,p.src);p.dbKey=p.id;changed=true}}}if(changed)save(input);return input}
@@ -308,7 +332,9 @@ async function importJ(f, replace=true){
     }
     next.version=V;next.schemaVersion=DATA_SCHEMA;
     next.updatedAt=new Date().toISOString();
-    await persistHorsePhotosForState(next);
+    const photoResult=await persistHorsePhotosForState(next);
+    next=photoResult.state;
+    const photoFailures=photoResult.failures;
     const nextJson=JSON.stringify(persistableState(next));
     const previousJson=localStorage.getItem(K);
     if(E.restoreStatus) E.restoreStatus.textContent=`${next.horses.length}頭を保存しています…`;
@@ -327,9 +353,10 @@ async function importJ(f, replace=true){
     state=await hydrateStatePhotos(roundTrip);state=await hydrateStateVideos(state);
     render();
     window.scrollTo({top:0,behavior:'instant'});
-    const msg=`${report.count}頭を${replace?'置換復元':'追加・更新'}しました`;
+    const photoNote=photoFailures.length?`（${photoFailures.length}件の写真は端末保存に失敗したため、馬データのみ復元）`:'';
+    const msg=`${report.count}頭を${replace?'置換復元':'追加・更新'}しました${photoNote}`;
     if(E.restoreStatus){E.restoreStatus.textContent=msg;E.restoreStatus.className='muted import-status-ok'}
-    toast(msg);
+    toast(`${report.count}頭を復元しました`);
     alert(msg);
   }catch(e){
     state=before;

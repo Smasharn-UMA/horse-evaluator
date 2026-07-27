@@ -1,14 +1,13 @@
-# Horse Evaluator AI Version 2.0.0
+# Horse Evaluator AI Version 2.0.1
 
-Version 1.8.15.6を基盤にしたVersion 2.0 Sprint 1版です。
+Version 2.0.0 Sprint 1を基礎に、旧Version 3.1.29形式のJSONバックアップ復元を修正した互換性修正版です。
 
-## 主な仕様
-- 基本データ: localStorage
-- 写真1枚: IndexedDB
-- 歩様動画1本: IndexedDB（URL併用可）
-- JSONバックアップ／復元
-- 写真AI・歩様AI・統合JSON取込
-- AI解析日と使用データの記録
-- 旧バージョンデータの自動移行
+## 主な修正
+- Version 3.1.29形式の `horses` 配列をVersion 2系へ移行
+- 埋め込み写真（data URL）をIndexedDBへ移行
+- 写真保存に失敗した場合も馬データ全体の復元を継続
+- 復元後の登録頭数を再検証
+- iOS Safari／ホーム画面追加環境でFileReaderを使用
 
-`index.html`をSafariで開き、ホーム画面へ追加して使用します。
+## 起動
+`index.html` をGitHub Pagesまたは対応ブラウザで開いてください。
