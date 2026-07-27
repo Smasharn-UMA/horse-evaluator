@@ -15,3 +15,7 @@
 ## 互換性
 - 既存データは読み込み時に管理属性を補完
 - JSONバックアップ／復元形式は後方互換を維持
+
+
+## Draft 1.8.20
+- Development session prepared.
