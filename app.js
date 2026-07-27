@@ -20,7 +20,7 @@ function ensureAiData(horse){
 // === END AI DATA STRUCTURE ===
 
 (()=>{'use strict';
-const K='horseEvaluator3',V='3.1.29',UI_K='horseEvaluator3_ui',PRE_IMPORT_K='horseEvaluator3_preImportBackup',PHOTO_DB='horseEvaluator3_photos',PHOTO_STORE='photos',VIDEO_DB='horseEvaluator3_videos',VIDEO_STORE='videos',$=id=>document.getElementById(id);let state;
+const K='horseEvaluator3',V='3.1.30',UI_K='horseEvaluator3_ui',PRE_IMPORT_K='horseEvaluator3_preImportBackup',PHOTO_DB='horseEvaluator3_photos',PHOTO_STORE='photos',VIDEO_DB='horseEvaluator3_videos',VIDEO_STORE='videos',$=id=>document.getElementById(id);let state;
 const E={yearFilter:$('yearFilter'),clubFilter:$('clubFilter'),sexFilter:$('sexFilter'),stableAreaFilter:$('stableAreaFilter'),searchInput:$('searchInput'),sortSelect:$('sortSelect'),favoriteOnly:$('favoriteOnly'),dashboard:$('dashboard'),horseList:$('horseList'),resultCount:$('resultCount'),emptyState:$('emptyState'),horseDialog:$('horseDialog'),horseForm:$('horseForm'),detailDialog:$('detailDialog'),detailContent:$('detailContent'),toast:$('toast'),importUrlBtn:$('importUrlBtn'),importStatus:$('importStatus'),importTextBtn:$('importTextBtn'),pageText:$('pageText'),importFormat:$('importFormat'),restoreStatus:$('restoreStatus'),resetFiltersBtn:$('resetFiltersBtn')};
 const DEFAULT_MODEL={name:'標準モデル',weights:{gait:30,body:25,growth:15,measurement:10,pedigree:10,connections:10},thresholds:{s:90,a:80,b:70}};
 const GROUP_LABELS={gait:'歩様',body:'馬体',growth:'成長性',measurement:'測尺',pedigree:'血統・配合',connections:'厩舎・牧場'};
@@ -73,8 +73,27 @@ function horseSimilarity(target,candidate){
  exact.slice(0,2).forEach(x=>reasons.push(`${x}一致`));
  return{horseId:candidate.id,horseName:candidate.name,score:Math.round(score*1000)/10,coverage:used,categories,reason:reasons.slice(0,4).join('・')||'入力済み項目の総合比較'};
 }
-function similarHorseMatches(h,limit=5){return(state?.horses||[]).filter(x=>x.id!==h.id).map(x=>horseSimilarity(h,x)).filter(Boolean).sort((a,b)=>b.score-a.score||b.coverage-a.coverage).slice(0,limit)}
-function similarityHtml(h){const matches=similarHorseMatches(h);if(!matches.length)return`<section class="similarity-card"><div class="similarity-head"><div><h3>類似馬エンジン</h3><p>登録済み馬の評価・測尺を比較</p></div><span class="similarity-badge">比較待ち</span></div><p class="similarity-empty">比較に必要な共通評価項目が不足しています。対象馬と比較馬の評価シートを入力してください。</p></section>`;return`<section class="similarity-card"><div class="similarity-head"><div><h3>類似馬エンジン</h3><p>登録済み馬の入力済み評価・測尺を数値比較</p></div><span class="similarity-badge">上位${matches.length}頭</span></div><div class="similarity-list">${matches.map((m,i)=>`<button type="button" class="similarity-row" data-similar-id="${esc(m.horseId)}"><span class="similarity-rank">${i+1}</span><span class="similarity-main"><b>${esc(m.horseName)}</b><small>${esc(m.reason)}／比較配点 ${m.coverage}%</small></span><strong>${m.score.toFixed(1)}<small>%</small></strong></button>`).join('')}</div><p class="similarity-note">類似度は競走能力や活躍を保証するものではなく、登録済みデータ間の形態的・評価上の近さを示します。</p></section>`}
+function horseYearValue(h){const y=Number(h?.year);return Number.isFinite(y)?y:null}
+function similarHorseCandidates(h){
+ const targetYear=horseYearValue(h);
+ return(state?.horses||[]).filter(candidate=>{
+   if(candidate.id===h.id)return false;
+   const candidateYear=horseYearValue(candidate);
+   // 年度が判定できる場合は、対象馬より前年以前だけを比較対象にする。
+   // 対象馬または候補馬の年度が欠落している場合は、誤比較を避けるため除外する。
+   return targetYear!=null&&candidateYear!=null&&candidateYear<targetYear;
+ });
+}
+function similarHorseMatches(h,limit=5){return similarHorseCandidates(h).map(x=>horseSimilarity(h,x)).filter(Boolean).sort((a,b)=>b.score-a.score||b.coverage-a.coverage).slice(0,limit)}
+function similarityHtml(h){
+ const targetYear=horseYearValue(h),candidates=similarHorseCandidates(h),matches=similarHorseMatches(h);
+ const scope=targetYear==null?'年度未設定':`${targetYear-1}年度以前`;
+ if(!matches.length){
+   const message=targetYear==null?'対象馬の年度を設定すると、前年以前の馬だけで比較できます。':candidates.length?'前年以前の候補馬はありますが、共通する評価項目が不足しています。対象馬と比較馬の評価シートを入力してください。':'前年以前の比較対象馬が登録されていません。';
+   return`<section class="similarity-card"><div class="similarity-head"><div><h3>類似馬エンジン</h3><p>${esc(scope)}の登録馬だけを比較</p></div><span class="similarity-badge">比較待ち</span></div><p class="similarity-empty">${esc(message)}</p></section>`;
+ }
+ return`<section class="similarity-card"><div class="similarity-head"><div><h3>類似馬エンジン</h3><p>${esc(scope)}の入力済み評価・測尺を数値比較</p></div><span class="similarity-badge">上位${matches.length}頭</span></div><div class="similarity-list">${matches.map((m,i)=>`<button type="button" class="similarity-row" data-similar-id="${esc(m.horseId)}"><span class="similarity-rank">${i+1}</span><span class="similarity-main"><b>${esc(m.horseName)}</b><small>${esc(m.reason)}／比較配点 ${m.coverage}%</small></span><strong>${m.score.toFixed(1)}<small>%</small></strong></button>`).join('')}</div><p class="similarity-note">当年および未来年度の馬は比較対象から除外しています。類似度は競走能力や活躍を保証するものではなく、登録済みデータ間の形態的・評価上の近さを示します。</p></section>`;
+}
 function investmentJudgment(h){
  const r=recommendation(h),ev=normalizeEvaluation(h.evaluation),entries=EVAL_FIELDS.map(k=>({key:k,label:EVAL_LABELS[k],score:scoreValue(ev.scores[k])})).filter(x=>x.score!=null);
  if(r.score==null)return{summary:'評価シートを入力すると、出資判断の根拠を自動生成します。',strengths:[],risks:[],reason:'現時点では判断材料が不足しています。',skipReason:'',stance:'評価待ち'};

@@ -1,4 +1,4 @@
-# Horse Evaluator 3.0 Version 1.8.18
+# Horse Evaluator 3.0 Version 1.8.18.1
 
 Version 1.8.17を基盤に、登録済み馬の評価データと測尺を比較する「類似馬エンジン」を追加した版です。
 
