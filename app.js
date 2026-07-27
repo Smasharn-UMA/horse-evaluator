@@ -1,3 +1,24 @@
+
+// === AI DATA STRUCTURE v1.8.17 ===
+const DEFAULT_AI_DATA = {
+ version:"1.0",analysisDate:"",model:"",overallScore:null,
+ photoAi:{overall:null,hindquarter:null,explosion:null,shoulder:null,chest:null,back:null,neck:null,bone:null,balance:null,growth:null,summary:""},
+ gaitAi:{overall:null,rhythm:null,stride:null,flexibility:null,impulsion:null,stability:null,hindquarter:null,summary:""},
+ measurementAi:{score:null,weight:null,height:null,girth:null,cannon:null,growthRate:null,summary:""},
+ pedigreeAi:{score:null,sire:null,broodmareSire:null,nick:null,summary:""},
+ femaleFamilyAi:{score:null,familyStrength:null,siblings:null,production:null,summary:""},
+ trainerAi:{score:null,trainerPerformance:null,twoYearOld:null,strikeRate:null,summary:""},
+ breederAi:{score:null,breederPerformance:null,successRate:null,summary:""},
+ similarity:{calculated:false,overall:null,topMatches:[]}
+};
+function ensureAiData(horse){
+ if(!horse.ai){
+   horse.ai=JSON.parse(JSON.stringify(DEFAULT_AI_DATA));
+ }
+ return horse;
+}
+// === END AI DATA STRUCTURE ===
+
 (()=>{'use strict';
 const K='horseEvaluator3',V='3.1.29',UI_K='horseEvaluator3_ui',PRE_IMPORT_K='horseEvaluator3_preImportBackup',PHOTO_DB='horseEvaluator3_photos',PHOTO_STORE='photos',VIDEO_DB='horseEvaluator3_videos',VIDEO_STORE='videos',$=id=>document.getElementById(id);let state;
 const E={yearFilter:$('yearFilter'),clubFilter:$('clubFilter'),sexFilter:$('sexFilter'),stableAreaFilter:$('stableAreaFilter'),searchInput:$('searchInput'),sortSelect:$('sortSelect'),favoriteOnly:$('favoriteOnly'),dashboard:$('dashboard'),horseList:$('horseList'),resultCount:$('resultCount'),emptyState:$('emptyState'),horseDialog:$('horseDialog'),horseForm:$('horseForm'),detailDialog:$('detailDialog'),detailContent:$('detailContent'),toast:$('toast'),importUrlBtn:$('importUrlBtn'),importStatus:$('importStatus'),importTextBtn:$('importTextBtn'),pageText:$('pageText'),importFormat:$('importFormat'),restoreStatus:$('restoreStatus'),resetFiltersBtn:$('resetFiltersBtn')};
@@ -412,28 +433,3 @@ $('exportBtn').onclick=exportJ;$('importInput').addEventListener('change',e=>{co
 $('seedBtn').onclick=()=>{const now=new Date().toISOString();state.horses.push({id:uid(),year:2026,club:'ユニオン',horseNo:14,name:'リフレイムの2025',sex:'牝',birthDate:'2025-03-29',sire:'エピファネイア',dam:'リフレイム',broodmareSire:'アメリカンファラオ',stableArea:'美浦',trainer:'黒岩陽一',breeder:'千里ファーム',trainingFarm:'山口ステーブル',price:8800,shareCount:800,sharePrice:110000,recruitmentPr:'Sprint 1.3動作確認用の募集時PRです。',internalId:'UNION-2026-014',measurements:{weight:436,height:150,girth:172,cannon:20.5},sourceUrl:'https://www.union-oc.co.jp/id/4014#open_PHOTO',photoUrl:'',videoUrl:'',favorite:false,notes:'Sprint 1.2動作確認用',evaluation:normalizeEvaluation({}),createdAt:now,updatedAt:now,changeLog:[{at:now,action:'サンプル登録'}]});save();render();toast('サンプルを追加しました')};
 $('modelSettingsBtn').onclick=openModelSettings;$('closeModelBtn').onclick=$('cancelModelBtn').onclick=()=>$('modelDialog').close();Object.values(modelInputs()).forEach(el=>el.oninput=updateWeightTotal);$('resetWeightsBtn').onclick=setDefaultWeights;$('modelForm').onsubmit=e=>{e.preventDefault();const inputs=modelInputs(),weights=Object.fromEntries(Object.entries(inputs).map(([k,el])=>[k,Number(el.value||0)])),total=Object.values(weights).reduce((a,b)=>a+b,0);if(total!==100){alert('重みの合計を100%にしてください。');return}const thresholds={s:Number($('thresholdS').value),a:Number($('thresholdA').value),b:Number($('thresholdB').value)};if(!(thresholds.s>thresholds.a&&thresholds.a>thresholds.b)){alert('推奨度基準は S > A > B の順にしてください。');return}state.modelSettings=normalizeModel({name:$('modelName').value,weights,thresholds});save();$('modelDialog').close();render();toast('評価モデルを保存しました')};
 $('clearBtn').onclick=async()=>{if(confirm('全データを削除しますか？')){state=base();save();await photoDbClear().catch(console.warn);await videoDbClear().catch(console.warn);render()}};async function initApp(){initEvaluationControls();state=load();await migrateLegacyPhotos(state);await hydrateStatePhotos(state);await hydrateStateVideos(state);refreshFilters();loadUi();render()}initApp().catch(e=>{console.error(e);alert('アプリの初期化中にエラーが発生しました。\n'+e.message)});})();
-
-
-// ===== Version 1.8.16 AI Data Structure =====
-const DEFAULT_AI_DATA = {
-  version: "1.0",
-  analysisDate: "",
-  model: "",
-  overallScore: null,
-  photoAi:{overall:null,hindquarter:null,explosion:null,shoulder:null,chest:null,back:null,neck:null,bone:null,balance:null,growth:null,summary:""},
-  gaitAi:{overall:null,rhythm:null,stride:null,flexibility:null,impulsion:null,stability:null,hindquarter:null,summary:""},
-  measurementAi:{score:null,weight:null,height:null,girth:null,cannon:null,growthRate:null,summary:""},
-  pedigreeAi:{score:null,sire:null,broodmareSire:null,nick:null,summary:""},
-  femaleFamilyAi:{score:null,familyStrength:null,siblings:null,production:null,summary:""},
-  trainerAi:{score:null,trainerPerformance:null,twoYearOld:null,strikeRate:null,summary:""},
-  breederAi:{score:null,breederPerformance:null,successRate:null,summary:""},
-  similarity:{calculated:false,overall:null,topMatches:[]}
-};
-
-function ensureAiData(horse){
-  if(!horse.ai){
-    horse.ai = JSON.parse(JSON.stringify(DEFAULT_AI_DATA));
-  }
-  return horse;
-}
-// ===== End AI Data Structure =====
