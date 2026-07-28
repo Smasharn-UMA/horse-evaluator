@@ -674,3 +674,6 @@
 @media(max-width:640px){.similarity-head{padding:15px}.similarity-row{grid-template-columns:30px minmax(0,1fr) auto;padding:13px 14px;gap:9px}.similarity-main small{font-size:.72rem}.similarity-row>strong{font-size:1.08rem}}
 
 .teacher-badge{background:#e8f5e9!important;color:#1b5e20!important;border-color:#81c784!important}.owned-badge{background:#fff3e0!important;color:#9a4d00!important;border-color:#ffb74d!important}.teacher-manager{border-color:#9bbfa3}.teacher-detail{margin:18px 0;padding:18px;border:1px solid #b7d4bd;border-radius:14px;background:#f5fbf6}.teacher-detail h3{margin-top:0}.card-actions button[data-a="teacher"]{background:#edf7ef;color:#205b2c}
+
+/* Version 1.8.20 Teacher Data Operations */
+.completeness-badge{background:#eef4ff!important;color:#244f8f!important;border-color:#9eb8df!important}.teacher-detail .notes+ .notes{margin-top:10px}
