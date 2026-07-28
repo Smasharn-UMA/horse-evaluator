@@ -1,4 +1,4 @@
-# Test Results — Version 1.8.20.2
+# Test Results — Version 1.8.20.3
 
 ## Static checks
 - `node --check app.js`: passed
@@ -31,3 +31,5 @@ Expected and confirmed:
 
 ## Environment limitation
 Actual cross-origin URL fetching cannot be guaranteed in GitHub Pages because it depends on CORS and the availability of the external reader service. When fetching fails, the app now explicitly directs the user to paste the page body.
+
+- URL取得または解析失敗時に本文欄が空欄へ戻ることをコード確認済み。

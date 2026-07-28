@@ -1,3 +1,9 @@
+## Version 1.8.20.3 URL Failure Text Clear
+
+### 修正
+- URL取り込みが失敗した際、本文欄に自動取得途中の文章や解析不能な文章を残さないようにしました。
+- 失敗後の本文欄は空欄に戻り、利用者がページ本文をそのまま貼り付けられます。
+
 # Version 1.8.20 Teacher Data Operations
 
 ## 実装内容
