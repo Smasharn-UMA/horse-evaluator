@@ -1,35 +1,33 @@
-# Test Results — Version 1.8.20.3
+# TEST RESULTS — Version 1.8.20.4 Dev
 
-## Static checks
-- `node --check app.js`: passed
-- Existing file structure retained: `index.html`, `style.css`, `app.js`
-- Local-storage key and schema version unchanged
+## 実施済み
 
-## Parser checks
-### Carrot active horse (Reader/Markdown format)
-Test data based on the public page structure for horse ID 2208.
+- `node --check app.js`：構文エラーなし。
+- キャロット現役馬の追加フォーマットを単体テスト。
 
-Expected and confirmed:
-- Name: シックスペンス
-- Birth date: 2021-04-17
-- Sex: 牡
-- Coat: 鹿毛
-- Sire: キズナ
-- Dam: フィンレイズラッキーチャーム
-- Broodmare sire: Twirling Candy
-- Breeder: ノーザンファーム
-- Area: 美浦
-- Trainer: 田中博
-- Class: OP(6-1-0-6)
-- Cross information stored in notes
+### 入力例
 
-## Regression scope
-- Existing JSON storage key unchanged
-- Existing schemaVersion remains 2
-- Union/Silk parser entry points retained
-- Manual page-text import retained
+- シックスペンス
+- 牡 5歳 鹿毛 '21/4/17生
+- Sixpence（英語）…父キズナ × 母フィンレイズラッキーチャーム(BMS:Twirling Candy)
+- 関東 田中博 厩舎 生産ノーザンファーム
+- Cryptoclearance 4D×5D, Danzig 5D×5D
+- 総口数400口 募集総額5,000万円 1口出資額125,000円
+- 平地OP(6-1-0-6)
 
-## Environment limitation
-Actual cross-origin URL fetching cannot be guaranteed in GitHub Pages because it depends on CORS and the availability of the external reader service. When fetching fails, the app now explicitly directs the user to paste the page body.
+### 取得結果
 
-- URL取得または解析失敗時に本文欄が空欄へ戻ることをコード確認済み。
+- 馬名：シックスペンス
+- 募集年度：2022
+- 性別／毛色／生年月日：牡／鹿毛／2021-04-17
+- 英語名：Sixpence
+- 父／母／母父：キズナ／フィンレイズラッキーチャーム／Twirling Candy
+- 所属／厩舎／生産：美浦／田中博／ノーザンファーム
+- 募集総額／口数／1口価格：5,000万円／400口／125,000円
+- クラス・戦績：平地OP、6-1-0-6、通算13戦
+
+## 端末確認項目
+
+- iPad／iPhoneで「自動判定」のまま本文を貼り付け、各入力欄へ反映されること。
+- 保存後、詳細画面に英語名・由来・クロス・戦績が表示されること。
+- JSONバックアップ後の復元で追加項目が維持されること。
