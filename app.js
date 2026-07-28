@@ -20,7 +20,7 @@ function ensureAiData(horse){
 // === END AI DATA STRUCTURE ===
 
 (()=>{'use strict';
-const K='horseEvaluator3',V='3.1.32',SCHEMA_VERSION=2,UI_K='horseEvaluator3_ui',PRE_IMPORT_K='horseEvaluator3_preImportBackup',PHOTO_DB='horseEvaluator3_photos',PHOTO_STORE='photos',VIDEO_DB='horseEvaluator3_videos',VIDEO_STORE='videos',$=id=>document.getElementById(id);let state;
+const K='horseEvaluator3',V='3.1.33',SCHEMA_VERSION=2,UI_K='horseEvaluator3_ui',PRE_IMPORT_K='horseEvaluator3_preImportBackup',PHOTO_DB='horseEvaluator3_photos',PHOTO_STORE='photos',VIDEO_DB='horseEvaluator3_videos',VIDEO_STORE='videos',$=id=>document.getElementById(id);let state;
 const E={yearFilter:$('yearFilter'),clubFilter:$('clubFilter'),sexFilter:$('sexFilter'),stableAreaFilter:$('stableAreaFilter'),searchInput:$('searchInput'),sortSelect:$('sortSelect'),favoriteOnly:$('favoriteOnly'),dataViewFilter:$('dataViewFilter'),dashboard:$('dashboard'),horseList:$('horseList'),resultCount:$('resultCount'),emptyState:$('emptyState'),horseDialog:$('horseDialog'),horseForm:$('horseForm'),detailDialog:$('detailDialog'),detailContent:$('detailContent'),toast:$('toast'),importUrlBtn:$('importUrlBtn'),importStatus:$('importStatus'),importTextBtn:$('importTextBtn'),pageText:$('pageText'),importFormat:$('importFormat'),restoreStatus:$('restoreStatus'),resetFiltersBtn:$('resetFiltersBtn')};
 const DEFAULT_MODEL={name:'標準モデル',weights:{gait:30,body:25,growth:15,measurement:10,pedigree:10,connections:10},thresholds:{s:90,a:80,b:70}};
 const GROUP_LABELS={gait:'歩様',body:'馬体',growth:'成長性',measurement:'測尺',pedigree:'血統・配合',connections:'厩舎・牧場'};
@@ -327,14 +327,67 @@ function parseSilk(text){
  price,sharePrice,shareCount:(price!=null&&sharePrice)?Math.round(price*10000/sharePrice):null,recruitmentPr:valueFor(['募集馬紹介','募集時のPR','コメント']),sourceUrl:'',measurements:{weight:measure('馬体重','kg'),height:measure('体高','cm'),girth:measure('胸囲','cm'),cannon:measure('管囲','cm')}};
  data.internalId=internalId(data.club,data.year,data.horseNo,'');return data
 }
-function detectFormat(text,url=''){const x=cleanText(text),u=t(url);if(/silkhorseclub\.jp/i.test(u))return'silk';if(/union-oc\.co\.jp/i.test(u))return'union';const silkScore=[/シルク(?:・ホースクラブ|ホースクラブ)?/,/募集馬名/,/性別\s*[\/／・]\s*毛色/,/募集総額\s*[\/／・]\s*一口出資額/,/一口出資額/,/在厩場所/,/クラス/].filter(r=>r.test(x)).length,unionScore=[/PEGASUS/i,/ユニオン(?:オーナーズクラブ)?/,/募集時のPR/,/生産者からのPR/].filter(r=>r.test(x)).length;if(silkScore>=1&&silkScore>unionScore)return'silk';if(unionScore>=1&&unionScore>=silkScore)return'union';return''}
+
+function valueByLabels(text,labels){
+ const ls=lines(text);
+ for(const label of labels){
+  const exact=afterLabel(ls,label);if(exact)return exact.replace(/^\|\s*/,'').trim();
+  const escaped=label.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
+  const patterns=[new RegExp('^'+escaped+'\\s*[：:]?\\s*[|｜]?\\s*(.+)$','i'),new RegExp('^'+escaped+'\\s*[|｜]\\s*(.+)$','i')];
+  for(const row of ls){for(const re of patterns){const m=row.match(re);if(m?.[1])return m[1].replace(/\s*\|\s*$/,'').trim()}}
+ }
+ return'';
+}
+function normalizeBirthDate(text){const m=t(text).match(/(20\d{2})(?:年|[\/.\-])\s*(\d{1,2})(?:月|[\/.\-])\s*(\d{1,2})日?/);return m?`${m[1]}-${m[2].padStart(2,'0')}-${m[3].padStart(2,'0')}`:''}
+function parseCarrotActive(text,url=''){
+ const x=cleanText(text),ls=lines(x);
+ const name=(ls.find(v=>!/^\*|メニュー|ログイン|所属馬情報|所属馬一覧|出走予定|競走結果|勝利馬一覧|活躍馬|募集馬一覧|クラブ紹介|入会案内|ご登録情報/.test(v)&&!/^20\d{2}年/.test(v)&&!/^#/.test(v)&&!/[|｜]/.test(v)&&!/^父\s|^母\s|^BMS\s|^生産\s|^(関東|関西|美浦|栗東)\s|^クロス\s|^平地\s/.test(v))||'').replace(/^#+\s*/,'').trim();
+ const header=x.match(/(20\d{2}年\s*\d{1,2}月\s*\d{1,2}日生)[\s\S]{0,60}?(牡|牝|せん|騸)\s*(\d+)歳[\s\S]{0,30}?([一-龠ぁ-んァ-ヶ]+毛)/);
+ const birthDate=normalizeBirthDate(header?.[1]||x);
+ const sexValue=sex(header?.[2]||valueByLabels(x,['性別']));
+ const coatColor=header?.[4]||valueByLabels(x,['毛色']);
+ const affiliation=valueByLabels(x,['所属']);
+ let areaRaw='',trainerRaw='';
+ const at=ls.find(v=>/^(関東|関西|美浦|栗東|地方)\s*(?:[|｜]\s*)?.+厩舎/.test(v));
+ if(at){const m=at.match(/^(関東|関西|美浦|栗東|地方)\s*(?:[|｜]\s*)?(.+?)\s*厩舎/);areaRaw=m?.[1]||'';trainerRaw=m?.[2]||''}
+ if(!trainerRaw){trainerRaw=valueByLabels(x,['厩舎']);areaRaw=affiliation||trainerRaw}
+ const stableArea=/関東|美浦/.test(areaRaw)?'美浦':/関西|栗東/.test(areaRaw)?'栗東':area(areaRaw);
+ const horseClass=valueByLabels(x,['平地','クラス']);
+ const cross=valueByLabels(x,['クロス']);
+ const notes=[cross?`クロス：${cross}`:'',horseClass?`現役クラス・戦績：${horseClass}`:''].filter(Boolean).join('\n');
+ const year=birthDate?Number(birthDate.slice(0,4))+1:new Date().getFullYear();
+ const data={year,club:'キャロット',horseNo:null,name,sex:sexValue,coatColor,birthDate,sire:valueByLabels(x,['父']),dam:valueByLabels(x,['母']),broodmareSire:valueByLabels(x,['BMS','母の父','母父']),stableArea,trainer:trainerRaw.replace(/\s+/g,''),breeder:valueByLabels(x,['生産','生産牧場']),trainingFarm:'',currentLocation:'',horseClass,price:null,shareCount:null,sharePrice:null,recruitmentPr:'',sourceUrl:url,notes,measurements:{weight:null,height:null,girth:null,cannon:null}};
+ data.internalId=internalId(data.club,data.year,data.horseNo,'');return data;
+}
+function parseUnionActive(text,url=''){
+ const x=cleanText(text),ls=lines(x);
+ const firstHorseName=ls.find(v=>!/^マイ馬に登録する$/.test(v)&&!/^父\s|^母\s|^母の父\s|^馬名$|^意味・由来|^馬名綴り|^生年月日|^年齢|^性別|^毛色|^所属|^厩舎|^戦績|^中央:|^地方:|^障害:|^クラス|^生産牧場/.test(v))||'';
+ const birthDate=normalizeBirthDate(valueByLabels(x,['生年月日']));
+ const recordLines=ls.filter(v=>/^(中央|地方|障害)\s*[：:]/.test(v));
+ const meaning=valueByLabels(x,['意味・由来']);const spelling=valueByLabels(x,['馬名綴り']);
+ const notes=[spelling?`馬名綴り：${spelling}`:'',meaning?`意味・由来：${meaning}`:'',...recordLines].filter(Boolean).join('\n');
+ const year=birthDate?Number(birthDate.slice(0,4))+1:new Date().getFullYear();
+ const sexText=valueByLabels(x,['性別'])||first(x,/性別\s*[：:]?\s*(牡|牝|せん|騸)/);
+ const coat=valueByLabels(x,['毛色'])||first(x,/毛色\s*[：:]?\s*([^\s\n]+)/);
+ const affiliation=valueByLabels(x,['所属'])||first(x,/所属\s*[：:]?\s*(美浦|栗東|地方)/);
+ const trainer=valueByLabels(x,['厩舎'])||first(x,/厩舎\s*[：:]?\s*([^\n]+)/);
+ const data={year,club:'ユニオン',horseNo:null,name:firstHorseName,sex:sex(sexText),coatColor:coat,birthDate,sire:valueByLabels(x,['父']),dam:valueByLabels(x,['母']),broodmareSire:valueByLabels(x,['母の父','母父']),stableArea:area(affiliation),trainer:trainer.replace(/\s+/g,''),breeder:valueByLabels(x,['生産牧場','生産']),trainingFarm:'',currentLocation:'',horseClass:valueByLabels(x,['クラス']),price:null,shareCount:null,sharePrice:null,recruitmentPr:'',sourceUrl:url,notes,measurements:{weight:null,height:null,girth:null,cannon:null}};
+ data.internalId=internalId(data.club,data.year,data.horseNo,'');return data;
+}
+function parseImportedPage(format,text,url=''){
+ if(format==='silk')return parseSilk(text);
+ if(format==='union-active')return parseUnionActive(text,url);
+ if(format==='carrot-active')return parseCarrotActive(text,url);
+ return parseUnion(text,url);
+}
+function detectFormat(text,url=''){const x=cleanText(text),u=t(url);if(/carrotclub\.net/i.test(u))return'carrot-active';if(/union-oc\.co\.jp/i.test(u)&&/マイ馬に登録する|中央\s*[：:]|馬名綴り/.test(x))return'union-active';if(/silkhorseclub\.jp/i.test(u))return'silk';if(/union-oc\.co\.jp/i.test(u))return'union';if(/BMS[\s|｜]+|クロス[\s|｜]+|\d{4}年\d{1,2}月\d{1,2}日生/.test(x)&&/(関東|関西|美浦|栗東)[\s|｜]+.*厩舎/.test(x))return'carrot-active';if(/マイ馬に登録する|馬名綴り/.test(x)&&/中央\s*[：:]/.test(x))return'union-active';const silkScore=[/シルク(?:・ホースクラブ|ホースクラブ)?/,/募集馬名/,/性別\s*[\/／・]\s*毛色/,/募集総額\s*[\/／・]\s*一口出資額/,/一口出資額/,/在厩場所/,/クラス/].filter(r=>r.test(x)).length,unionScore=[/PEGASUS/i,/ユニオン(?:オーナーズクラブ)?/,/募集時のPR/,/生産者からのPR/].filter(r=>r.test(x)).length;if(silkScore>=1&&silkScore>unionScore)return'silk';if(unionScore>=1&&unionScore>=silkScore)return'union';return''}
 function selectedImportFormat(text,url=''){const selected=E.importFormat?.value||'auto';return selected==='auto'?detectFormat(text,url):selected}
 async function fetchPageSource(url){let directError;try{const r=await fetch(url,{mode:'cors',credentials:'omit',cache:'no-store'});if(!r.ok)throw new Error(`HTTP ${r.status}`);return{source:await r.text(),baseUrl:r.url||url,kind:'html',route:'direct'}}catch(e){directError=e}try{const clean=url.replace(/^https?:\/\//,'');const proxy=`https://r.jina.ai/https://${clean}`;const r=await fetch(proxy,{headers:{Accept:'text/plain'},cache:'no-store'});if(!r.ok)throw new Error(`Reader HTTP ${r.status}`);return{source:await r.text(),baseUrl:url,kind:'reader',route:'reader'}}catch(e){console.error(directError,e);throw new Error('ページを取得できませんでした。通信状態または外部取得サービスの制限を確認してください。')}}
 async function fetchPageText(url){const r=await fetchPageSource(url);if(r.kind==='html')return new DOMParser().parseFromString(r.source,'text/html').body?.innerText||r.source;return r.source}
 function normalizeImageUrl(raw,baseUrl){let v=t(raw).replace(/&amp;/g,'&').replace(/^['"]|['"]$/g,'');if(!v||v.startsWith('data:')||v.startsWith('blob:')||v.startsWith('javascript:'))return'';try{return new URL(v,baseUrl).href}catch{return''}}
 function imageCandidateScore(url,alt=''){const x=(url+' '+alt).toLowerCase();let score=0;if(/\.(?:jpe?g|png|webp)(?:[?#]|$)/i.test(url))score+=3;if(/photo|gallery|horse|boshu|募集|馬体|catalog|large|original|upload|img/i.test(x))score+=3;if(/logo|icon|banner|header|footer|common|loading|arrow|btn|button|sns|facebook|twitter|youtube|favicon|spacer|noimage/i.test(x))score-=8;if(/\.(?:svg|gif)(?:[?#]|$)/i.test(url))score-=5;return score}
 function extractPageImageUrls(source,baseUrl,kind){const found=[];const add=(raw,alt='')=>{const url=normalizeImageUrl(raw,baseUrl);if(!url)return;const score=imageCandidateScore(url,alt);if(score<1)return;if(!found.some(x=>x.url===url))found.push({url,score,alt:t(alt)})};if(kind==='html'){const doc=new DOMParser().parseFromString(source,'text/html');doc.querySelectorAll('img').forEach(img=>{add(img.currentSrc||img.getAttribute('src')||img.getAttribute('data-src')||img.getAttribute('data-original')||img.getAttribute('data-lazy-src'),img.alt);const ss=img.getAttribute('srcset')||img.getAttribute('data-srcset');if(ss)ss.split(',').forEach(x=>add(x.trim().split(/\s+/)[0],img.alt))});doc.querySelectorAll('a[href]').forEach(a=>{if(/\.(?:jpe?g|png|webp)(?:[?#]|$)/i.test(a.getAttribute('href')||''))add(a.getAttribute('href'),a.textContent)})}else{for(const m of source.matchAll(/!\[([^\]]*)\]\((https?:\/\/[^)\s]+)(?:\s+['"][^'"]*['"])?\)/g))add(m[2],m[1]);for(const m of source.matchAll(/https?:\/\/[^\s<>()'"]+?\.(?:jpe?g|png|webp)(?:\?[^\s<>()'"]*)?/gi))add(m[0])}return found.sort((a,b)=>b.score-a.score).map(x=>x.url)}
-function supportedHorsePage(url){try{const u=new URL(url);return/(^|\.)(union-oc\.co\.jp|silkhorseclub\.jp)$/i.test(u.hostname)}catch{return false}}
+function supportedHorsePage(url){try{const u=new URL(url);return/(^|\.)(union-oc\.co\.jp|silkhorseclub\.jp|carrotclub\.net)$/i.test(u.hostname)}catch{return false}}
 function modelInputs(){return{gait:$('weightGait'),body:$('weightBody'),growth:$('weightGrowth'),measurement:$('weightMeasurement'),pedigree:$('weightPedigree'),connections:$('weightConnections')}}
 function updateWeightTotal(){const total=Object.values(modelInputs()).reduce((s,el)=>s+Number(el.value||0),0),el=$('weightTotal');el.textContent=total+'%';el.classList.toggle('invalid',total!==100)}
 function openModelSettings(){const m=normalizeModel(state.modelSettings);$('modelName').value=m.name;Object.entries(modelInputs()).forEach(([k,el])=>el.value=m.weights[k]);$('thresholdS').value=m.thresholds.s;$('thresholdA').value=m.thresholds.a;$('thresholdB').value=m.thresholds.b;updateWeightTotal();$('modelDialog').showModal()}
@@ -405,10 +458,10 @@ async function importJ(f, replace=true){
 
 
 function applyImportedData(data){
-  const fields=['year','club','horseNo','name','sex','coatColor','birthDate','sire','dam','broodmareSire','stableArea','trainer','breeder','trainingFarm','currentLocation','horseClass','price','shareCount','sharePrice','sourceUrl','recruitmentPr'];
+  const fields=['year','club','horseNo','name','sex','coatColor','birthDate','sire','dam','broodmareSire','stableArea','trainer','breeder','trainingFarm','currentLocation','horseClass','price','shareCount','sharePrice','sourceUrl','recruitmentPr','notes'];
   fields.forEach(k=>{if(data[k]!=null&&$(k))$(k).value=data[k]});
   const m=data.measurements||{};['weight','height','girth','cannon'].forEach(k=>{if(m[k]!=null)$(k).value=m[k]});
-  setImportStatus('募集馬情報を入力欄へ反映しました。保存ボタンで登録してください。','ok');
+  setImportStatus('ページ情報を入力欄へ反映しました。内容を確認し、保存ボタンで登録してください。','ok');
 }
 function closeHorseDialog(){clearAiImportInputs();if(E.horseDialog.open)E.horseDialog.close()}
 function closeDetailDialog(){if(E.detailDialog.open)E.detailDialog.close()}
@@ -472,8 +525,8 @@ document.addEventListener('click',e=>{
   if(button&&button!==gaitTransferButton){e.preventDefault();applyGaitToEvaluation()}
 });
 $('applyFullAiJsonBtn').onclick=applyFullAiJson;$('copyFullAiTemplateBtn').onclick=copyFullAiTemplate;
-E.importTextBtn.onclick=()=>{try{const text=E.pageText.value;if(!t(text))throw new Error('ページ本文を貼り付けてください。');const format=selectedImportFormat(text,t($('sourceUrl').value));if(!format)throw new Error('クラブ形式を判定できませんでした。');const data=format==='silk'?parseSilk(text):parseUnion(text,t($('sourceUrl').value));applyImportedData(data)}catch(err){console.error(err);setImportStatus(err.message,'error');alert('本文を取り込めませんでした。\n'+err.message)}};
-E.importUrlBtn.onclick=async()=>{try{const url=t($('sourceUrl').value);if(!url)throw new Error('募集馬ページURLを入力してください。');E.importUrlBtn.disabled=true;setImportStatus('ページ本文を取得しています…');const text=await fetchPageText(url);E.pageText.value=text;const format=selectedImportFormat(text,url);if(!format)throw new Error('クラブ形式を判定できませんでした。');const data=format==='silk'?parseSilk(text):parseUnion(text,url);applyImportedData(data)}catch(err){console.error(err);setImportStatus(err.message,'error');alert('URLから取り込めませんでした。\n'+err.message)}finally{E.importUrlBtn.disabled=false}};
+E.importTextBtn.onclick=()=>{try{const text=E.pageText.value;if(!t(text))throw new Error('ページ本文を貼り付けてください。');const format=selectedImportFormat(text,t($('sourceUrl').value));if(!format)throw new Error('クラブ形式を判定できませんでした。');const data=parseImportedPage(format,text,t($('sourceUrl').value));applyImportedData(data)}catch(err){console.error(err);setImportStatus(err.message,'error');alert('本文を取り込めませんでした。\n'+err.message)}};
+E.importUrlBtn.onclick=async()=>{try{const url=t($('sourceUrl').value);if(!url)throw new Error('募集馬ページURLを入力してください。');E.importUrlBtn.disabled=true;setImportStatus('ページ本文を取得しています…');const text=await fetchPageText(url);E.pageText.value=text;const format=selectedImportFormat(text,url);if(!format)throw new Error('クラブ形式を判定できませんでした。');const data=parseImportedPage(format,text,url);applyImportedData(data)}catch(err){console.error(err);setImportStatus(err.message,'error');alert('URLから取り込めませんでした。\n'+err.message)}finally{E.importUrlBtn.disabled=false}};
 
 $('exportBtn').onclick=exportJ;$('importInput').addEventListener('change',e=>{const f=e.target.files&&e.target.files[0];if(E.restoreStatus){E.restoreStatus.textContent=f?`「${f.name}」を選択しました。復元を開始します…`:'ファイルが選択されませんでした。';E.restoreStatus.className='muted'}if(f){setTimeout(()=>importJ(f,true),0)}e.target.value='';});
 $('seedBtn').onclick=()=>{const now=new Date().toISOString();state.horses.push({id:uid(),year:2026,club:'ユニオン',horseNo:14,name:'リフレイムの2025',sex:'牝',birthDate:'2025-03-29',sire:'エピファネイア',dam:'リフレイム',broodmareSire:'アメリカンファラオ',stableArea:'美浦',trainer:'黒岩陽一',breeder:'千里ファーム',trainingFarm:'山口ステーブル',price:8800,shareCount:800,sharePrice:110000,recruitmentPr:'Sprint 1.3動作確認用の募集時PRです。',internalId:'UNION-2026-014',measurements:{weight:436,height:150,girth:172,cannon:20.5},sourceUrl:'https://www.union-oc.co.jp/id/4014#open_PHOTO',photoUrl:'',videoUrl:'',favorite:false,notes:'Sprint 1.2動作確認用',management:{owned:false,comparisonExcluded:false,tags:[]},teacherData:{enabled:false,rank:'',registeredAt:'',finalRating:null,satisfaction:null,retrospective:'',comment:''},evaluation:normalizeEvaluation({}),createdAt:now,updatedAt:now,changeLog:[{at:now,action:'サンプル登録'}]});save();render();toast('サンプルを追加しました')};
