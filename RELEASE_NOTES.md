@@ -67,3 +67,22 @@
 ### 互換性
 - 既存JSONは移行処理で新項目を補完します。
 - 既存の募集馬・教師データ・写真・動画の保存構造は維持します。
+
+
+## Version 1.8.20.5 Dev — Measurement Parser
+
+### 追加
+- 共通 `parseMeasurements` を追加。
+- 馬体重、体高、胸囲、管囲の自動抽出に対応。
+- 日付見出しを伴う複数時点の測尺を `measurementHistory` として保存。
+- 最新測尺を `measurements` に反映し、既存UIは最新値表示を維持。
+- `measurementSource` に取込種別、URL、取込時刻を保存。
+
+### 変更
+- ユニオン募集馬、シルク募集馬、キャロット現役馬、ユニオン現役馬の各Parserを共通測尺Parserへ接続。
+- Schema Versionを4へ更新。
+- アプリ内部Versionを3.1.36へ更新。
+
+### 互換性
+- 旧形式の `measurements` は移行時に履歴1件として補完。
+- 募集馬、教師データ、写真、動画、AI評価の既存構造は維持。
