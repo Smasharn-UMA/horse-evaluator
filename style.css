@@ -677,3 +677,6 @@
 
 /* Version 1.8.20 Teacher Data Operations */
 .completeness-badge{background:#eef4ff!important;color:#244f8f!important;border-color:#9eb8df!important}.teacher-detail .notes+ .notes{margin-top:10px}
+
+/* Teacher Data Analyzer v1.8.20.7 */
+.analysis-summary{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin:12px 0}.analysis-summary>div{border:1px solid var(--line,#d1d5db);border-radius:10px;padding:12px;background:var(--panel,#fff)}.analysis-summary span{display:block;font-size:.78rem;color:var(--muted,#6b7280)}.analysis-summary strong{display:block;font-size:1.35rem;margin-top:3px}.analysis-table-wrap{overflow:auto;max-height:56vh;border:1px solid var(--line,#d1d5db);border-radius:10px}.analysis-table{width:100%;border-collapse:collapse;font-size:.86rem;white-space:nowrap}.analysis-table th,.analysis-table td{padding:8px 10px;border-bottom:1px solid var(--line,#e5e7eb);text-align:right}.analysis-table th:nth-child(2),.analysis-table td:nth-child(2){text-align:left;position:sticky;left:0;background:var(--panel,#fff)}.analysis-table thead th{position:sticky;top:0;background:var(--panel,#fff);z-index:2}.analysis-positive{font-weight:700}.analysis-negative{font-weight:700}@media(max-width:700px){.analysis-summary{grid-template-columns:1fr 1fr}.analysis-table{font-size:.78rem}}

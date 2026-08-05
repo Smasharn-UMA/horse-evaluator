@@ -92,3 +92,23 @@
 - 年齢を含まないプロフィール行の検出に対応。
 - `Tastiera（伊語）` など英語以外の馬名表記・由来を抽出。
 - タスティエーラ形式の本文貼り付けで新規登録できない問題を修正。
+
+## Version 1.8.20.7 Teacher Analysis Foundation
+
+### Added
+- 「教師データ解析JSON」書き出し機能
+- 「教師データ一次解析」画面
+- 重賞勝ち群／非重賞勝ち群の平均比較
+- 標準化効果量とデータ充足率の表示
+- Teacher Dataset schema `horse-evaluator-teacher-dataset-2.0`
+- `analysisMeta` に最終解析日時と教師データ数を保存
+
+### Compatibility
+- 旧JSONはSchema Version 5へ自動移行
+- 既存の馬データ、写真、歩様、測尺、教師データを保持
+- 通常バックアップ形式は従来どおり利用可能
+
+### Known limitations
+- 実績ラベルが未設定の馬は比較群から除外
+- 重賞勝ち群と比較群の双方に評価点がない項目は表示しない
+- 現段階では記述統計であり、予測モデルの自動更新は未実装
