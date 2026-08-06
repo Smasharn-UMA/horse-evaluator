@@ -20,7 +20,7 @@ function ensureAiData(horse){
 // === END AI DATA STRUCTURE ===
 
 (()=>{'use strict';
-const K='horseEvaluator3',V='3.1.38',SCHEMA_VERSION=5,UI_K='horseEvaluator3_ui',PRE_IMPORT_K='horseEvaluator3_preImportBackup',PHOTO_DB='horseEvaluator3_photos',PHOTO_STORE='photos',VIDEO_DB='horseEvaluator3_videos',VIDEO_STORE='videos',$=id=>document.getElementById(id);let state;
+const K='horseEvaluator3',V='3.1.39',SCHEMA_VERSION=5,UI_K='horseEvaluator3_ui',PRE_IMPORT_K='horseEvaluator3_preImportBackup',PHOTO_DB='horseEvaluator3_photos',PHOTO_STORE='photos',VIDEO_DB='horseEvaluator3_videos',VIDEO_STORE='videos',$=id=>document.getElementById(id);let state;
 const E={yearFilter:$('yearFilter'),clubFilter:$('clubFilter'),sexFilter:$('sexFilter'),stableAreaFilter:$('stableAreaFilter'),searchInput:$('searchInput'),sortSelect:$('sortSelect'),favoriteOnly:$('favoriteOnly'),dataViewFilter:$('dataViewFilter'),dashboard:$('dashboard'),horseList:$('horseList'),resultCount:$('resultCount'),emptyState:$('emptyState'),horseDialog:$('horseDialog'),horseForm:$('horseForm'),detailDialog:$('detailDialog'),detailContent:$('detailContent'),toast:$('toast'),importUrlBtn:$('importUrlBtn'),importStatus:$('importStatus'),importTextBtn:$('importTextBtn'),pageText:$('pageText'),importFormat:$('importFormat'),restoreStatus:$('restoreStatus'),resetFiltersBtn:$('resetFiltersBtn')};
 const DEFAULT_MODEL={name:'標準モデル',weights:{gait:30,body:25,growth:15,measurement:10,pedigree:10,connections:10},thresholds:{s:90,a:80,b:70}};
 const GROUP_LABELS={gait:'歩様',body:'馬体',growth:'成長性',measurement:'測尺',pedigree:'血統・配合',connections:'厩舎・牧場'};
@@ -393,7 +393,7 @@ function importedPlainText(text){
 function parseCarrotActive(text,url=''){
  const x=importedPlainText(text),ls=lines(x);
  const ignored=/^(メニュー|ログイン|所属馬情報|所属馬一覧|出走予定|競走結果|勝利馬一覧|活躍馬|募集馬一覧|募集馬カタログ電子版|ご登録情報の変更|クラブ紹介|入会案内|PageTop|Home|Back|PCサイト|Copyright|血統図|牝系図)/i;
- const profileIndex=ls.findIndex(v=>/(?:牡|牝|せん|騸)(?:\s*\d+歳)?\s+.*?(?:毛).*?(?:20\d{2}年|['’]\d{2}[\/.-])/.test(v));
+ const profileIndex=ls.findIndex(v=>/(?:20\d{2}年\s*\d{1,2}月\s*\d{1,2}日生\s*)?(?:牡|牝|せん|騸)(?:\s*\d+歳)?\s*.*?毛|(?:牡|牝|せん|騸)(?:\s*\d+歳)?\s*.*?毛.*?(?:20\d{2}年|['’]\d{2}[\/.-])/.test(v));
  const fullBirth=first(x,/(20\d{2})年\s*(\d{1,2})月\s*(\d{1,2})日生/,0);
  const shortBirth=first(x,/[\'’](\d{2})[\/.-](\d{1,2})[\/.-](\d{1,2})生/,0);
  let birthDate=normalizeBirthDate(fullBirth||'');
@@ -418,7 +418,7 @@ function parseCarrotActive(text,url=''){
  breeder=breeder||valueByLabels(x,['生産','生産牧場']);
  const stableArea=/関東|美浦/.test(areaRaw)?'美浦':/関西|栗東/.test(areaRaw)?'栗東':area(areaRaw);
  const price=numberFrom(x,/募集総額\s*([0-9,]+)万円/),shareCount=numberFrom(x,/総口数\s*([0-9,]+)口/),sharePrice=numberFrom(x,/1口出資額\s*([0-9,]+)円/);
- const recordMatch=x.match(/(?:^|\n)\s*(平地|障害|地方)?\s*([A-Za-z0-9ⅠⅡⅢ]+)\s*[（(]\s*(\d+)\s*[-－]\s*(\d+)\s*[-－]\s*(\d+)\s*[-－]\s*(\d+)\s*[）)]/m);
+ const recordMatch=x.match(/(?:^|\n)\s*(平地|障害|地方)?\s*([^（(\n]+?)\s*[（(]\s*(\d+)\s*[-－]\s*(\d+)\s*[-－]\s*(\d+)\s*[-－]\s*(\d+)\s*[）)]/m);
  const surface=t(recordMatch?.[1]),className=t(recordMatch?.[2]);
  const wins=recordMatch?Number(recordMatch[3]):null,seconds=recordMatch?Number(recordMatch[4]):null,thirds=recordMatch?Number(recordMatch[5]):null,others=recordMatch?Number(recordMatch[6]):null;
  const recordText=recordMatch?t(recordMatch[0]):'';
@@ -429,7 +429,8 @@ function parseCarrotActive(text,url=''){
  const notes=[pedigreeCross?`クロス：${pedigreeCross}`:'',recordText?`現役クラス・戦績：${recordText}`:'',englishName?`英語名：${englishName}`:'',nameOrigin?`馬名の由来：${nameOrigin}`:''].filter(Boolean).join('\n');
  const year=birthDate?Number(birthDate.slice(0,4))+1:new Date().getFullYear();
  const measurementParsed=parseMeasurements(x,'carrot-text',url);
- const data={year,club:'キャロット',horseNo:null,name,englishName,nameOrigin,sex:sexValue,coatColor,birthDate,sire,dam,broodmareSire,pedigreeCross,stableArea,trainer:trainerRaw.replace(/\s+/g,''),breeder,trainingFarm:'',currentLocation:'',horseClass,price,shareCount,sharePrice,recruitmentPr:'',sourceUrl:url,notes,currentStatus:{surface,className,recordText,wins,seconds,thirds,others,starts},measurements:measurementParsed.measurements,measurementHistory:measurementParsed.history,measurementSource:measurementParsed.source};
+ const trainingFarm=valueByLabels(x,['予定育成牧場','育成牧場']);
+ const data={year,club:'キャロット',horseNo:null,name,englishName,nameOrigin,sex:sexValue,coatColor,birthDate,sire,dam,broodmareSire,pedigreeCross,stableArea,trainer:trainerRaw.replace(/\s+/g,''),breeder,trainingFarm,currentLocation:'',horseClass,price,shareCount,sharePrice,recruitmentPr:'',sourceUrl:url,notes,currentStatus:{surface,className,recordText,wins,seconds,thirds,others,starts},measurements:measurementParsed.measurements,measurementHistory:measurementParsed.history,measurementSource:measurementParsed.source};
  data.internalId=internalId(data.club,data.year,data.horseNo,'');return data;
 }
 function parseUnionActive(text,url=''){
