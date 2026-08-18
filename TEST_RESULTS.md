@@ -55,3 +55,11 @@ The following should be confirmed on the actual iPhone/iPad installation:
 - `2勝クラス(2-1-1-2)` 抽出：PASS
 - 測尺4項目と予定育成牧場抽出：PASS
 - JavaScript構文確認：PASS
+
+
+## 1.8.20.11 Physical Analysis 2026
+- PASS: app.js JavaScript syntax (`node --check`)
+- PASS: Existing schemaVersion remains 6; no destructive migration added
+- PASS: Physical profile excludes race class, graded/G1 flags, pedigree, trainer, farm, and price from derived calculations
+- PASS: 5-domain thresholds and linkage/compensation logic present
+- PASS: Responsive CSS added for iPad/iPhone detail views
