@@ -1,3 +1,11 @@
+# v1.8.20.13 TEST RESULTS
+
+- JavaScript syntax: PASS
+- CSV fixture: 94 records / No.1-94 / duplicate 0 / missing No. 0
+- Import design: existing records are skipped, no overwrite
+- Price/share validation enabled
+- Measurement range warnings enabled
+
 # v1.8.20.9 Test Results
 
 - JavaScript構文確認 (`node --check`): PASS
