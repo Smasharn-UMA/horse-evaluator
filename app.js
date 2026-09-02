@@ -20,7 +20,7 @@ function ensureAiData(horse){
 // === END AI DATA STRUCTURE ===
 
 (()=>{'use strict';
-const K='horseEvaluator3',V='3.1.47',SCHEMA_VERSION=6,UI_K='horseEvaluator3_ui',PRE_IMPORT_K='horseEvaluator3_preImportBackup',PHOTO_DB='horseEvaluator3_photos',PHOTO_STORE='photos',VIDEO_DB='horseEvaluator3_videos',VIDEO_STORE='videos',$=id=>document.getElementById(id);let state;
+const K='horseEvaluator3',V='3.1.48',SCHEMA_VERSION=6,UI_K='horseEvaluator3_ui',PRE_IMPORT_K='horseEvaluator3_preImportBackup',PHOTO_DB='horseEvaluator3_photos',PHOTO_STORE='photos',VIDEO_DB='horseEvaluator3_videos',VIDEO_STORE='videos',$=id=>document.getElementById(id);let state;
 const E={yearFilter:$('yearFilter'),clubFilter:$('clubFilter'),sexFilter:$('sexFilter'),stableAreaFilter:$('stableAreaFilter'),searchInput:$('searchInput'),sortSelect:$('sortSelect'),favoriteOnly:$('favoriteOnly'),dataViewFilter:$('dataViewFilter'),dashboard:$('dashboard'),horseList:$('horseList'),resultCount:$('resultCount'),emptyState:$('emptyState'),horseDialog:$('horseDialog'),horseForm:$('horseForm'),detailDialog:$('detailDialog'),detailContent:$('detailContent'),toast:$('toast'),importUrlBtn:$('importUrlBtn'),importStatus:$('importStatus'),importTextBtn:$('importTextBtn'),pageText:$('pageText'),importFormat:$('importFormat'),restoreStatus:$('restoreStatus'),resetFiltersBtn:$('resetFiltersBtn'),carrotCsvInput:$('carrotCsvInput'),carrotCsvStatus:$('carrotCsvStatus')};
 const DEFAULT_MODEL={name:'標準モデル',weights:{gait:30,body:25,growth:15,measurement:10,pedigree:10,connections:10},thresholds:{s:90,a:80,b:70}};
 const GROUP_LABELS={gait:'歩様',body:'馬体',growth:'成長性',measurement:'測尺',pedigree:'血統・配合',connections:'厩舎・牧場'};
@@ -121,42 +121,35 @@ function recommendation(h){const q=weightedScore(h);if(q.score==null)return{grad
 function stars(v){const x=Math.max(0,Math.min(5,Math.round(Number(v)||0)));return '★'.repeat(x)+'☆'.repeat(5-x)}
 function averageSimilarity(pairs){const vals=pairs.filter(([a,b])=>a!=null&&b!=null).map(([a,b])=>Math.max(0,1-Math.abs(Number(a)-Number(b))/4));return vals.length?{value:vals.reduce((x,y)=>x+y,0)/vals.length,count:vals.length}:null}
 function measurementSimilarity(a,b){const am=a.measurements||{},bm=b.measurements||{},scales={weight:80,height:10,girth:15,cannon:2.5},vals=[];Object.keys(scales).forEach(k=>{if(am[k]!=null&&bm[k]!=null){vals.push(Math.max(0,1-Math.abs(Number(am[k])-Number(bm[k]))/scales[k]))}});return vals.length?{value:vals.reduce((x,y)=>x+y,0)/vals.length,count:vals.length}:null}
-function horseSimilarity(target,candidate){
- const te=normalizeEvaluation(target.evaluation).scores,ce=normalizeEvaluation(candidate.evaluation).scores;
- const tp=normalizePhotos(target).photoAi.scores,cp=normalizePhotos(candidate).photoAi.scores;
- const tg=normalizeVideos(target).gaitAi.scores,cg=normalizeVideos(candidate).gaitAi.scores;
- const categories=[];
- const add=(key,label,weight,result)=>{if(result&&result.count)categories.push({key,label,weight,value:result.value,count:result.count})};
- add('gait','歩様',30,averageSimilarity(GAIT_AI_FIELDS.map(k=>[tg[k]??te[k],cg[k]??ce[k]])));
- add('body','馬体',25,averageSimilarity(PHOTO_AI_FIELDS.filter(k=>k!=='growth').map(k=>[tp[k]??te[k],cp[k]??ce[k]])));
- add('growth','成長性',10,averageSimilarity([[tp.growth??te.growth,cp.growth??ce.growth]]));
- add('measurement','測尺',15,measurementSimilarity(target,candidate));
- add('pedigree','血統・配合',10,averageSimilarity([[te.pedigree,ce.pedigree]]));
- add('connections','厩舎・牧場',10,averageSimilarity([[te.trainer,ce.trainer],[te.farm,ce.farm]]));
- const used=categories.reduce((s,x)=>s+x.weight,0);if(used<35||categories.length<2)return null;
- let score=categories.reduce((s,x)=>s+x.value*x.weight,0)/used;
- const exact=[];
- if(target.sire&&candidate.sire&&target.sire===candidate.sire)exact.push('父');
- if(target.broodmareSire&&candidate.broodmareSire&&target.broodmareSire===candidate.broodmareSire)exact.push('母父');
- if(target.trainer&&candidate.trainer&&target.trainer===candidate.trainer)exact.push('厩舎');
- if(target.breeder&&candidate.breeder&&target.breeder===candidate.breeder)exact.push('生産牧場');
- if(exact.length)score=Math.min(1,score+Math.min(.04,exact.length*.01));
- const ranked=categories.slice().sort((a,b)=>b.value-a.value);
- const reasons=ranked.filter(x=>x.value>=.75).slice(0,3).map(x=>`${x.label} ${Math.round(x.value*100)}%`);
- exact.slice(0,2).forEach(x=>reasons.push(`${x}一致`));
- return{horseId:candidate.id,horseName:candidate.name,score:Math.round(score*1000)/10,coverage:used,categories,reason:reasons.slice(0,4).join('・')||'入力済み項目の総合比較'};
+// 類似度の主計算は募集時の馬体写真・歩様動画から得た身体5領域のみ。
+// 血統・厩舎・牧場・価格・競走実績は計算に使用しない。測尺は補助情報として別表示する。
+function physicalHorseSimilarity(target,candidate){
+ const domains=BODY_PROFILE_ORDER.map(key=>{const def=BODY_PROFILE_GROUPS[key],a=averagePhysical(target,def.fields),b=averagePhysical(candidate,def.fields);if(a==null||b==null)return null;const sim=Math.max(0,1-Math.abs(a-b)/4);return{key,label:def.label,a,b,sim,diff:Math.abs(a-b)}}).filter(Boolean);
+ if(domains.length<3)return null;
+ const score=domains.reduce((s,x)=>s+x.sim,0)/domains.length;
+ const closest=domains.slice().sort((a,b)=>b.sim-a.sim).slice(0,2);
+ const farthest=domains.slice().sort((a,b)=>b.diff-a.diff)[0];
+ const ms=measurementSimilarity(target,candidate);
+ return{horseId:candidate.id,horseName:candidate.name,year:candidate.year,club:candidate.club,horseNo:candidate.horseNo,score:Math.round(score*1000)/10,coverage:Math.round(domains.length/BODY_PROFILE_ORDER.length*100),domains,measurementScore:ms?Math.round(ms.value*1000)/10:null,reason:`似ている：${closest.map(x=>x.label).join('・')}${farthest&&farthest.diff>=.5?` ／ 違い：${farthest.label}`:''}`};
 }
+function horseSimilarity(target,candidate){return physicalHorseSimilarity(target,candidate)}
 function horseYearValue(h){const y=Number(h?.year);return Number.isFinite(y)?y:null}
-function similarHorseCandidates(h){return(state?.horses||[]).filter(candidate=>candidate.id!==h.id&&candidate.teacherData?.enabled&&!candidate.management?.comparisonExcluded)}
-function similarHorseMatches(h,limit=5){return similarHorseCandidates(h).map(x=>horseSimilarity(h,x)).filter(Boolean).sort((a,b)=>b.score-a.score||b.coverage-a.coverage).slice(0,limit)}
+function currentRecruitmentYear(){const years=(state?.horses||[]).filter(x=>!x.teacherData?.enabled).map(h=>horseYearValue(h)).filter(x=>x!=null);return years.length?Math.max(...years):new Date().getFullYear()}
+function similarTeacherCandidates(h){return(state?.horses||[]).filter(candidate=>candidate.id!==h.id&&candidate.teacherData?.enabled&&!candidate.management?.comparisonExcluded)}
+function similarRecruitmentCandidates(h,year=currentRecruitmentYear()){return(state?.horses||[]).filter(candidate=>candidate.id!==h.id&&!candidate.teacherData?.enabled&&!candidate.management?.comparisonExcluded&&horseYearValue(candidate)===year)}
+function sortedSimilarity(target,candidates,limit){return candidates.map(x=>physicalHorseSimilarity(target,x)).filter(Boolean).sort((a,b)=>b.score-a.score||b.coverage-a.coverage).slice(0,limit)}
+function teacherAchievementBadge(h){const l=teacherLabel(h);return l.isG1Winner?'GⅠ':l.isGradedWinner?'重賞':l.achievement||'教師'}
 function similarityHtml(h){
- const candidates=similarHorseCandidates(h),matches=similarHorseMatches(h);
- const scope='教師データ';
- if(!matches.length){
-   const message=candidates.length?'教師データ候補はありますが、共通する評価項目が不足しています。対象馬と教師データの評価シートを入力してください。':'教師データがまだ登録されていません。馬の編集画面から「教師データとして使用」を設定してください。';
-   return`<section class="similarity-card"><div class="similarity-head"><div><h3>類似馬エンジン</h3><p>${esc(scope)}だけを比較</p></div><span class="similarity-badge">比較待ち</span></div><p class="similarity-empty">${esc(message)}</p></section>`;
+ // B機能：教師馬を基準に、現在年度の募集馬から身体特徴が近い馬を検索する。
+ if(h.teacherData?.enabled){
+   const year=currentRecruitmentYear(),candidates=similarRecruitmentCandidates(h,year),matches=sortedSimilarity(h,candidates,10);
+   if(!matches.length){const message=candidates.length?'募集馬候補はありますが、共通する身体評価が不足しています。募集馬の写真・歩様AI評価を入力してください。':`${year}年の募集馬が登録されていません。`;return`<section class="similarity-card"><div class="similarity-head"><div><h3>この馬に似ている募集馬</h3><p>${year}年募集馬を、募集時の馬体・歩様だけで検索</p></div><span class="similarity-badge">比較待ち</span></div><p class="similarity-empty">${esc(message)}</p></section>`}
+   return`<section class="similarity-card"><div class="similarity-head"><div><h3>この馬に似ている募集馬</h3><p>${esc(h.name)}の募集時身体特徴 → ${year}年募集馬</p></div><span class="similarity-badge">TOP ${matches.length}</span></div><div class="similarity-list">${matches.map((m,i)=>`<button type="button" class="similarity-row" data-similar-id="${esc(m.horseId)}"><span class="similarity-rank">${i+1}</span><span class="similarity-main"><b>${esc(m.horseName)}</b><small>${esc(m.club)}${m.horseNo!=null?' No.'+m.horseNo:''} ／ ${esc(m.reason)}${m.measurementScore==null?'':` ／ 測尺 ${m.measurementScore.toFixed(1)}%`}</small></span><strong>${m.score.toFixed(1)}<small>%</small></strong></button>`).join('')}</div><p class="similarity-note">類似度は馬体写真・歩様動画から保存した身体5領域だけで計算します。測尺は補助表示で、類似度には加点しません。血統・厩舎・牧場・価格・競走実績は計算に使用しません。</p></section>`;
  }
- return`<section class="similarity-card"><div class="similarity-head"><div><h3>類似馬エンジン</h3><p>${esc(scope)}の入力済み評価・測尺を数値比較</p></div><span class="similarity-badge">上位${matches.length}頭</span></div><div class="similarity-list">${matches.map((m,i)=>`<button type="button" class="similarity-row" data-similar-id="${esc(m.horseId)}"><span class="similarity-rank">${i+1}</span><span class="similarity-main"><b>${esc(m.horseName)}</b><small>${esc(m.reason)}／比較配点 ${m.coverage}%</small></span><strong>${m.score.toFixed(1)}<small>%</small></strong></button>`).join('')}</div><p class="similarity-note">教師データに設定された馬だけを比較し、「比較対象外」の馬は除外しています。類似度は競走能力や活躍を保証するものではなく、登録済みデータ間の形態的・評価上の近さを示します。</p></section>`;
+ // 募集馬側では従来どおり、参考として似ている教師馬を表示。
+ const candidates=similarTeacherCandidates(h),matches=sortedSimilarity(h,candidates,5);
+ if(!matches.length){const message=candidates.length?'教師データ候補はありますが、共通する身体評価が不足しています。対象馬と教師データの写真・歩様AI評価を入力してください。':'教師データがまだ登録されていません。';return`<section class="similarity-card"><div class="similarity-head"><div><h3>似ている教師馬</h3><p>募集時の馬体・歩様だけを比較</p></div><span class="similarity-badge">比較待ち</span></div><p class="similarity-empty">${esc(message)}</p></section>`}
+ return`<section class="similarity-card"><div class="similarity-head"><div><h3>似ている教師馬</h3><p>募集時の身体特徴だけを比較</p></div><span class="similarity-badge">上位${matches.length}頭</span></div><div class="similarity-list">${matches.map((m,i)=>{const th=state.horses.find(x=>x.id===m.horseId);return`<button type="button" class="similarity-row" data-similar-id="${esc(m.horseId)}"><span class="similarity-rank">${i+1}</span><span class="similarity-main"><b>${esc(m.horseName)}</b><small>${esc(teacherAchievementBadge(th))} ／ ${esc(m.reason)}${m.measurementScore==null?'':` ／ 測尺 ${m.measurementScore.toFixed(1)}%`}</small></span><strong>${m.score.toFixed(1)}<small>%</small></strong></button>`}).join('')}</div><p class="similarity-note">類似度は競走能力の予測確率ではなく、募集時の身体特徴の近さです。</p></section>`;
 }
 function investmentJudgment(h){
  const r=recommendation(h),ev=normalizeEvaluation(h.evaluation),entries=EVAL_FIELDS.map(k=>({key:k,label:EVAL_LABELS[k],score:scoreValue(ev.scores[k])})).filter(x=>x.score!=null);
