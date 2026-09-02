@@ -1,3 +1,13 @@
+# v1.8.20.15 AI Protocol Fix
+
+- 統合AIテンプレートにHorse Evaluator固定解析プロトコルを追加。
+- 写真・歩様動画・測尺のみを身体評価に使用することを明示。
+- photoAi / gaitAi / evaluation.scores を既存教師データと同じ1〜5尺度に固定し、100点尺度への変換を禁止。
+- 血統・厩舎・生産牧場・価格・実績・他募集馬比較を身体解析から除外。
+- evaluation.scores の pedigree / trainer / farm は統合身体解析では null 固定。
+- 芝/ダート等の適性や募集馬群順位を身体解析コメントへ混入しないよう固定。
+- v1.8.20.14 の重要5項目表示、相対表示、ソート機能は維持。
+
 # Version 1.8.20.13 Carrot CSV Batch Import Dev
 
 - 2026キャロット募集馬CSV一括取込を追加
