@@ -74,3 +74,11 @@ Teacher Data Analyzerでは、クラスから自動判定できた非重賞馬�
 ### 重要
 このPhase 2はAI APIへ自動送信しません。写真・動画は本体内で匿名表示し、匿名プロンプトをコピーしてChatGPTで評価した結果を本体へ戻す方式です。
 正式教師値への採用はまだ行いません。
+
+
+## Version 1.8.20.19 — Blind Re-evaluation Phase 2.1
+- ブラインド再評価画面で、写真のdbKeyをhorseEvaluator3_photosから、動画のdbKeyをhorseEvaluator3_videosから実体読込するよう修正。
+- IndexedDBのメディア読込成否を匿名画面に表示。
+- 写真・歩様の双方が読めない場合、匿名JSONコピーを無効化。
+- JSONコピーだけではChatGPTへメディア添付されないことをUIに明記。
+- 既存教師評価とIndexedDBの保存形式は変更なし。
