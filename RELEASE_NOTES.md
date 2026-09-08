@@ -1,3 +1,10 @@
+# Version 1.8.20.21 / internal 3.1.52 — Blind Re-evaluation Phase 2.3 JSON Import Fix
+
+- ブラインド再評価結果の貼り付け時にスマートクォート（“ ”）を自動的に半角ダブルクォートへ正規化。
+- Markdownコードフェンスや回答文にJSONが含まれる場合もJSONオブジェクトを抽出して取り込み。
+- 1頭結果・一括結果の両方で同じ寛容なJSONパーサーを使用。
+- 既存教師データ、旧評価、写真・動画IndexedDBの保存方式は変更なし。
+
 # v1.8.20.16 AI Score Import Fix
 
 - AI解析値を既存UI・教師データと同じ1〜5整数尺度に再固定。
